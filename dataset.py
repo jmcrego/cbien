@@ -127,9 +127,9 @@ class Dataset():
         while True:
             first = i*self.args.shard_size
             last = min(len(batchs), (i+1)*self.args.shard_size)
-            fd = open(self.args.name + '.batchs.' + i, 'wb')
+            fd = open(self.args.name + '.batchs.' + str(i), 'wb')
             pickle.dump(batchs[first:last], fd)
-            logging.info('saved {}'.format(self.args.name + '.batchs.' + i))
+            logging.info('saved {}'.format(self.args.name + '.batchs.' + str(i)))
             i += 1
             if last == len(batchs):
                 break
