@@ -98,7 +98,7 @@ class Dataset():
                 examples.extend(curr_examples)
                 logging.info('read {} examples from {}'.format(len(curr_examples),file))
 
-        logging.info('shuffling examples...')
+        logging.info('shuffling {} examples...'.format(len(examples)))
         random.shuffle(examples) #shuffle examples
 
         logging.info('batching...')
