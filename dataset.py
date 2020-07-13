@@ -127,12 +127,13 @@ class Dataset():
         while True:
             first = i*self.args.shard_size
             last = min(len(batchs), (i+1)*self.args.shard_size)
-            fd = open(self.args.name + '.batchs.' + str(i), 'wb')
+            fd = open(self.args.name + '.batchs.shard' + str(i), 'wb')
             pickle.dump(batchs[first:last], fd)
-            logging.info('saved {}'.format(self.args.name + '.batchs.' + str(i)))
+            logging.info('saved {} with {} batchs'.format(self.args.name + '.batchs.shard' + str(i), last-first))
             i += 1
             if last == len(batchs):
                 break
+
 
     def add_pad(self, batch):
         batch_idx = []
