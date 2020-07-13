@@ -1,2 +1,2 @@
 # cbien
-congiguous bag of bilingual ngrams
+contiguous bag of bilingual ngrams
