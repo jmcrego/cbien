@@ -90,7 +90,7 @@ class Dataset():
     def batchs(self):
         ### read examples
         examples = []
-        fexamples = glob.glob(self.args.name + '.examples.EMEA.en-fr') #'.examples.*')
+        fexamples = glob.glob(self.args.name + '.examples.*')
         logging.info('reading examples from {}'.format(fexamples))
         for file in fexamples:
             with open(file,'rb') as f:
