@@ -3,6 +3,7 @@ import logging
 import sys
 import os
 import io
+import math
 from collections import defaultdict
 from utils import open_read
 from inputter import Inputter
@@ -22,10 +23,12 @@ class Vocab():
         self.idx_sep = 4
         self.str_sep = '<sep>'
         self.tok_to_idx = {} 
+        self.ngram_to_frq = defaultdict(int) #stores the number of documents (sentences) where tok appears (IDF)
         self.idx_to_tok = [] 
         self.max_ngram = None
         self.tag_src = '⠁' #braille number '1'
         self.tag_tgt = '⠃' #braille number '2'
+        self.n_sents = 0 #number of sentences in train (used for idf calculation)
 
     def read(self, file):
         if not os.path.exists(file):
@@ -39,42 +42,49 @@ class Vocab():
             tok = l.strip(" \n")
             if self.max_ngram is None:
                 info = tok.split()
-                if len(info)!=3:
-                    logging.error('erroneous first line in vocab (it must contain: max_ngram tag_src tag_tgt)')
+                if len(info)!=4:
+                    logging.error('erroneous first line in vocab (it must contain: max_ngram tag_src tag_tgt n_sents)')
                     sys.exit()
                 self.max_ngram = int(info.pop(0))
                 self.tag_src = info.pop(0)
                 self.tag_tgt = info.pop(0)
+                self.n_sents = int(info.pop(0))
                 logging.info('vocab max_ngram: {}'.format(self.max_ngram))
                 logging.info('vocab tag_src: {}'.format(self.tag_src))
                 logging.info('vocab tag_tgt: {}'.format(self.tag_tgt))
+                logging.info('vocab n_sents: {}'.format(self.n_sents))
                 continue
 
+            tok, idf = tok.split()
             if tok not in self.tok_to_idx:
                 self.idx_to_tok.append(tok)
                 self.tok_to_idx[tok] = len(self.tok_to_idx)
+                self.ngram_to_frq[tok] = idf
 
         f.close()
         logging.info('read vocab ({} entries) from {}'.format(len(self.idx_to_tok), file))
 
     def dump(self, file):
         f = open(file, "w")
-        f.write('{} {} {}\n'.format(self.max_ngram,self.tag_src,self.tag_tgt))
-        for tok in self.idx_to_tok:
-            f.write(tok+'\n')
+        f.write('{} {} {} {}\n'.format(self.max_ngram,self.tag_src,self.tag_tgt,self.n_sents))
+        for idx in range(len(self.idx_to_tok)):
+            ngram = self.idx_to_tok[idx]
+            idf = self.ngram_to_frq[ngram]
+            f.write("{}\t{}\n".format(ngram,idf))
         f.close()
-        logging.info('written vocab ({} entries, max_ngram={} tags_src: {} tag_tgt: {}) into {}'.format(len(self.idx_to_tok), self.max_ngram, self.tag_src, self.tag_tgt, file))
+        logging.info('written vocab ({} entries, max_ngram={} tags_src: {} tag_tgt: {} n_sents: {}) into {}'.format(len(self.idx_to_tok), self.max_ngram, self.tag_src, self.tag_tgt, self.n_sents, file))
 
     def build(self,file_src,file_tgt,token,min_freq=5,max_size=0,max_ngram=1):
         self.max_ngram = max_ngram
-        self.ngram_to_frq = defaultdict(int)
 
         file_pair = Inputter(file_src,file_tgt,token,self.max_ngram, self.str_sep, self.str_bos, self.str_eos, self.tag_src, self.tag_tgt)
         for src_tgt_sentence_tok in file_pair:
-            for ngram in file_pair.ngrams(src_tgt_sentence_tok):
-                if ngram == self.str_pad or ngram == self.str_unk or ngram == self.str_bos or ngram == self.str_eos: # or ngram == self.str_sep:
-                    continue
-                self.ngram_to_frq[ngram] += 1
+            self.n_sents += 1
+            ngram_seen = [] #to count only once each distinct token in the sentence
+            for ngram in file_pair.ngrams(src_tgt_sentence_tok): #returns the list of all ngrams in toks that do not contain <sep>
+                if ngram not in ngram_seen:
+                    self.ngram_to_frq[ngram] += 1
+                    ngram_seen.append(ngram)
 
         ### build vocab
         self.tok_to_idx[self.str_pad] = self.idx_pad #0

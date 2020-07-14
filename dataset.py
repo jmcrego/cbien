@@ -69,7 +69,7 @@ class Dataset():
                 sentence_idx.append(self.vocab[sentence_tok[i]])
                 if sentence_idx[-1] == self.vocab.idx_sep:
                     is_src = False
-                if sentence_idx[-1] > 4: # <pad>, <unk>, <bos>, <eos>, <sep> not considered to be predicted
+                if sentence_idx[-1] > 4: # 0:<pad>, 1:<unk>, 2:<bos>, 3:<eos>, 4:<sep> not considered to be predicted
                     to_predict.append(i)
                     if is_src:
                         n_src_valid += 1

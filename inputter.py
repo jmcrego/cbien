@@ -83,7 +83,7 @@ class Inputter():
 
             yield toks
 
-        logging.info('filtered {} out of {} sentences. found {} tokens in {},{}'.format(self.stats_nskip,self.stats_nsent,self.stats_ntokens,self.fsrc,self.ftgt))
+        logging.info('filtered {} out of {} sentences (found {} tokens) in {},{}'.format(self.stats_nskip,self.stats_nsent,self.stats_ntokens,self.fsrc,self.ftgt))
         fs.close()
         ft.close()
 
