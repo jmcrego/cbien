@@ -294,7 +294,7 @@ class Args():
    -etag         STRING : output examples tag
 
 To sort all examples by length:
-gunzip -c [name].examples.*.gz | shuf | sort -k 1 -g -s | cut -f 2- | gzip -c > [name].examples.gz 
+gunzip -c [name].examples.*.gz | shuf | sort -k 1 -g -s | cut -f 3- | gzip -c > [name].examples.gz 
 
  -------- When building batchs -----------------------------------------------
    -shard_size      INT : number of batchs per shard                (1000)

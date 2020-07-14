@@ -25,14 +25,14 @@ class Examples():
     def open_write(self,fout):
         self.f = gzip.open(fout+'.gz', 'wt')
 
-    def write(self, idx, neg, ctx):
+    def write(self, idx, neg, ctx, etag, nsent):
         if len(neg) != self.n_negs:
             logging.warning('bad number of negative examples {} should be {}'.format(len(neg), self.n_negs))
             return
         if len(ctx) == 0:
             logging.warning('empty context')
             return
-        line = '{}\t{}\t{}\t{}\n'.format(len(ctx), idx, ' '.join(map(str, neg)), ' '.join(map(str,ctx)))
+        line = '{}\t{}:{}\t{}\t{}\t{}\n'.format(len(ctx), etag, nsent, idx, ' '.join(map(str, neg)), ' '.join(map(str,ctx)))
         line.encode("utf-8")
         self.f.write(line)
         self.n += 1
@@ -71,7 +71,7 @@ class Dataset():
                 ctx = self.get_ctx(sentence_tok, c) #[idx, idx, ...]
                 if len(ctx) == 0:
                     continue
-                e.write(sentence_idx[c], neg, ctx)
+                e.write(sentence_idx[c], neg, ctx, self.args.etag, nsent)
             if nsent % 10000 == 0:
                 logging.info('{} sentences => {} examples'.format(nsent, len(e)))
         logging.info('read {} sentences => {} examples'.format(nsent, len(e)))
