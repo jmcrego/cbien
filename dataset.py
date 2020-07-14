@@ -11,6 +11,7 @@ import itertools
 import pyonmttok
 import pickle 
 import numpy as np
+import gzip
 from collections import defaultdict, Counter
 from utils import open_read
 from inputter import Inputter
@@ -20,10 +21,19 @@ class Examples():
     def __init__(self, n_negs, fout):
         self.n_negs = n_negs
         self.n = 0
-        self.f = gzip.open(fout + '.gz', 'wt')
+        self.f = gzip.open(fout+'.gz', 'wt')
 
     def add(self, idx, neg, ctx):
-        self.f.write(str(len(ctx)) + '\t' + str(idx) + ' ' + ' '.join(n_negs) + ' ' + ' '.join(ctx))
+        if len(neg) != self.n_negs:
+            logging.warning('bad number of negative examples {} should be {}'.format(len(neg), self.n_negs))
+            return
+        if len(ctx) == 0:
+            logging.warning('empty context')
+            return
+
+        line = '{}\t{} {} {}\n'.format(len(ctx), idx, ' '.join(map(str, neg)), ' '.join(map(str,ctx)))
+        line.encode("utf-8")
+        self.f.write(line)
         self.n += 1
 
     def close (self):
@@ -42,7 +52,7 @@ class Dataset():
     def examples(self):
         self.stats_ngrams = defaultdict(int)
 
-        e = Examples(self.args.n_negs,self.args.name + '.examples.' + self.args.etag)
+        e = Examples(self.args.n_negs, self.args.name + '.examples.' + self.args.etag)
         nsent = 0
         file_pair = Inputter(self.args.data_src,self.args.data_tgt,self.token,self.vocab)
         for sentence_tok, sentence_idx, to_predict in file_pair:
@@ -56,13 +66,13 @@ class Dataset():
                     continue
                 e.add(sentence_idx[c], neg, ctx)
             if nsent % 10000 == 0:
-                logging.info('{} sentences => {} examples'.format(nsent, len(examples)))
-        logging.info('read {} sentences => {} examples'.format(nsent, len(examples)))
+                logging.info('{} sentences => {} examples'.format(nsent, len(e)))
+        logging.info('read {} sentences => {} examples'.format(nsent, len(e)))
         for n,N in sorted(self.stats_ngrams.items(), key=lambda item: item[0], reverse=False): 
             logging.info('{}-grams: {}'.format(n,N))
 
         e.close()
-        
+
         #logging.info('saving examples...')
         #fd = open(self.args.name + '.examples.' + self.args.etag , 'wb') 
         #pickle.dump(examples, fd)
