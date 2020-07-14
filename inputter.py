@@ -57,7 +57,7 @@ class Inputter():
 
             toks = []
             idxs = []
-            to_predict = [] #tokens to be predicted (all but: bos, eos, sep, unk)
+            to_predict = [] #tokens to predicted (all but: bos, eos, sep, unk)
             toks.append(self.vocab.str_bos)
             idxs.append(self.vocab.idx_bos)
 
@@ -76,8 +76,10 @@ class Inputter():
 
             toks.append(self.vocab.str_eos)
             idxs.append(self.vocab.idx_eos)
+
             toks.append(self.vocab.str_sep)
             idxs.append(self.vocab.idx_sep)
+
             toks.append(self.vocab.str_bos)
             idxs.append(self.vocab.idx_bos)
 
@@ -98,7 +100,7 @@ class Inputter():
             idxs.append(self.vocab.idx_eos)
 
             self.stats_ntokens += len(SRC) + len(TGT)
-            self.stats_nOOV += toks.count(self.vocab.idx_unk)
+            self.stats_nOOV += idxs.count(self.vocab.idx_unk)
 
             yield toks, idxs, to_predict
 

@@ -59,10 +59,15 @@ class Dataset():
         file_pair = Inputter(self.args.data_src,self.args.data_tgt,self.token,self.vocab)
         for sentence_tok, sentence_idx, to_predict in file_pair:
             nsent += 1
-            for c in to_predict: ### bos, eos, sep are not considered in to_predict set
+#            print('nsent',str(nsent))
+#            print('tok',sentence_tok)
+#            print('idx',sentence_idx)
+#            print('pred',to_predict)
+            for c in to_predict: ### bos, eos, sep are not considered in to_predict set (c is the index in tok,idx of the token to predict)
                 if random.random() > self.args.pkeep_example: #probability to keep an example
                     continue #discard this token (example)
                 neg = self.get_neg(sentence_idx) #[idx, idx, ...]
+#                print('c={}'.format(c))
                 ctx = self.get_ctx(sentence_tok, c) #[idx, idx, ...]
                 if len(ctx) == 0:
                     continue
@@ -103,11 +108,16 @@ class Dataset():
                     break
                 if first<=c and lastplusone>c: ### do not consider ngrams containing the center
                     break
+                if self.vocab.str_sep in toks[first:lastplusone]: ### do not consier ngrams with <sep> in it
+                    break
+
                 idx = self.vocab[' '.join(toks[first:lastplusone])]
-                if idx == self.vocab.idx_unk: ### do not consider <unk>
+                if idx == self.vocab.idx_unk or idx == self.vocab.idx_bos or idx == self.vocab.idx_eos or idx == self.vocab.idx_sep: ### do not consider <unk>, <bos>, <eos>, <sep>
                     break
                 ctx.append(idx)
+#                print(idx, ' '.join(toks[first:lastplusone]))
                 self.stats_ngrams[lastplusone-first] += 1
+
         return ctx
 
 
