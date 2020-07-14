@@ -25,15 +25,14 @@ class Examples():
     def open_write(self,fout):
         self.f = gzip.open(fout+'.gz', 'wt')
 
-    def write(self, idx, neg, ctx, etag):
+    def write(self, idx, neg, ctx):
         if len(neg) != self.n_negs:
             logging.warning('bad number of negative examples {} should be {}'.format(len(neg), self.n_negs))
             return
         if len(ctx) == 0:
             logging.warning('empty context')
             return
-
-        line = '{}\t{} {} {}\t{}\n'.format(len(ctx), idx, ' '.join(map(str, neg)), ' '.join(map(str,ctx)), etag)
+        line = '{}\t{}\t{}\t{}\n'.format(len(ctx), idx, ' '.join(map(str, neg)), ' '.join(map(str,ctx)))
         line.encode("utf-8")
         self.f.write(line)
         self.n += 1
@@ -67,7 +66,7 @@ class Dataset():
                 ctx = self.get_ctx(sentence_tok, c) #[idx, idx, ...]
                 if len(ctx) == 0:
                     continue
-                e.write(sentence_idx[c], neg, ctx, self.args.etag)
+                e.write(sentence_idx[c], neg, ctx)
             if nsent % 10000 == 0:
                 logging.info('{} sentences => {} examples'.format(nsent, len(e)))
         logging.info('read {} sentences => {} examples'.format(nsent, len(e)))
@@ -75,7 +74,6 @@ class Dataset():
             logging.info('{}-grams: {}'.format(n,N))
 
         e.close()
-
         #logging.info('saving examples...')
         #fd = open(self.args.name + '.examples.' + self.args.etag , 'wb') 
         #pickle.dump(examples, fd)
@@ -115,31 +113,39 @@ class Dataset():
 
     def batchs(self):
         ### read examples
-        examples = []
-        fexamples = glob.glob(self.args.name + '.examples.gz')
-        logging.info('reading examples from {}'.format(fexamples))
-        for file in fexamples:
-            with open(file,'rb') as f:
-                curr_examples = pickle.load(f)
-                examples.extend(curr_examples)
-                logging.info('read {} examples from {}'.format(len(curr_examples),file))
+        logging.info('reading examples')
 
-        logging.info('shuffling {} examples...'.format(len(examples)))
-        random.shuffle(examples) #shuffle examples
-
-        logging.info('batching...')
         batchs = []
-        length = [len(examples[k][2]) for k in range(len(examples))] #length of ctx examples
-        ind_examples = np.argsort(np.array(length)) ### These are indexs of examples sorted by length of its context
         batch = []
-        for ind in ind_examples:
-            batch.append(examples[ind])
-            if len(batch) == self.args.batch_size:
-                batchs.append(self.add_pad(batch))
-                batch = []
-        if len(batch):
-            batchs.append(self.add_pad(batch)) ### this batch may have few examples
-        logging.info('built {} batchs with up to {} examples each'.format(len(batchs),self.args.batch_size))
+        with gzip.open(self.args.name + '.examples.gz','rb') as f:        
+            for l in f:
+                l = l.decode('utf8')
+                idx, neg, ctx = l.split('\t')
+                batch.append([ int(idx), map(int, neg.split(' ')), map(int, ctx.split(' ')) ])
+                if len(batch) == self.args.batch_size:
+                    batchs.append(self.add_pad(batch))
+                    batch = []
+            if len(batch):
+                batchs.append(self.add_pad(batch)) ### this batch may have few examples
+            logging.info('built {} batchs with up to {} examples each'.format(len(batchs),self.args.batch_size))
+
+#        logging.info('shuffling {} examples...'.format(len(examples)))
+#        random.shuffle(examples) #shuffle examples
+
+#        logging.info('batching...')
+#        batchs = []
+#        length = [len(examples[k][2]) for k in range(len(examples))] #length of ctx examples
+#        ind_examples = np.argsort(np.array(length)) ### These are indexs of examples sorted by length of its context
+
+#        batch = []
+#        for ind in ind_examples:
+#            batch.append(examples[ind])
+#            if len(batch) == self.args.batch_size:
+#                batchs.append(self.add_pad(batch))
+#                batch = []
+#        if len(batch):
+#            batchs.append(self.add_pad(batch)) ### this batch may have few examples
+#        logging.info('built {} batchs with up to {} examples each'.format(len(batchs),self.args.batch_size))
 
         logging.info('shuffling batches...')
         random.shuffle(batchs) #shuffle batchs
