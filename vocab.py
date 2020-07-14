@@ -43,7 +43,7 @@ class Vocab():
             if self.max_ngram is None:
                 info = tok.split()
                 if len(info)!=4:
-                    logging.error('erroneous first line in vocab (it must contain: max_ngram tag_src tag_tgt n_sents)')
+                    logging.error('bad first line in vocab (it must contain: max_ngram tag_src tag_tgt n_sents)')
                     sys.exit()
                 self.max_ngram = int(info.pop(0))
                 self.tag_src = info.pop(0)
@@ -55,7 +55,7 @@ class Vocab():
                 logging.info('vocab n_sents: {}'.format(self.n_sents))
                 continue
 
-            tok, idf = tok.split()
+            tok, idf = tok.split('\t')
             if tok not in self.tok_to_idx:
                 self.idx_to_tok.append(tok)
                 self.tok_to_idx[tok] = len(self.tok_to_idx)
@@ -88,7 +88,7 @@ class Vocab():
 
         ### build vocab
         self.tok_to_idx[self.str_pad] = self.idx_pad #0
-        self.idx_to_tok.append(self.str_pad)        
+        self.idx_to_tok.append(self.str_pad)
         self.tok_to_idx[self.str_unk] = self.idx_unk #1
         self.idx_to_tok.append(self.str_unk)
         self.tok_to_idx[self.str_bos] = self.idx_bos #2
