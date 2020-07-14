@@ -69,7 +69,7 @@ class Dataset():
                 sentence_idx.append(self.vocab[sentence_tok[i]])
                 if sentence_idx[-1] == self.vocab.idx_sep:
                     is_src = False
-                if sentence_idx[-1] > 4:
+                if sentence_idx[-1] > 4: # <pad>, <unk>, <bos>, <eos>, <sep> not considered to be predicted
                     to_predict.append(i)
                     if is_src:
                         n_src_valid += 1
@@ -78,10 +78,10 @@ class Dataset():
 
             if n_src_valid == 0 or n_tgt_valid == 0:
                 continue
-#            print('nsent',str(nsent))
-#            print('tok',sentence_tok)
-#            print('idx',sentence_idx)
-#            print('to_predict',to_predict)
+            print('nsent',str(nsent))
+            print('tok',sentence_tok)
+            print('idx',sentence_idx)
+            print('to_predict',to_predict)
             for c in to_predict: ### bos, eos, sep are not considered in to_predict set (c is the index in tok,idx of the token to predict)
                 if random.random() > self.args.pkeep_example: #probability to keep an example
                     continue #discard this token (example)
