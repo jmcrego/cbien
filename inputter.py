@@ -49,10 +49,12 @@ class Inputter():
             if len(SRC) == 0 or SRC[0] == '':
                 logging.debug('skip src empty sentence: <{}> {}:{}'.format(ls,self.fsrc,self.stats_nsent))
                 self.stats_nskip += 1
+                yield False, [], [], []
                 continue
             if len(TGT) == 0 or TGT[0] == '':
                 logging.debug('skip tgt empty sentence: <{}> {}:{}'.format(lt,self.ftgt,self.stats_nsent))
                 self.stats_nskip += 1
+                yield False, [], [], []
                 continue
 
             toks = []
@@ -72,6 +74,7 @@ class Inputter():
             if not src_ok:
                 #logging.debug('skip src sentence: <{}> {}:{}'.format(ls,self.fsrc,self.stats_nsent))
                 self.stats_nskip += 1
+                yield False, [], [], []
                 continue
 
             toks.append(self.vocab.str_eos)
@@ -102,7 +105,7 @@ class Inputter():
             self.stats_ntokens += len(SRC) + len(TGT)
             self.stats_nOOV += idxs.count(self.vocab.idx_unk)
 
-            yield toks, idxs, to_predict
+            yield True, toks, idxs, to_predict
 
         logging.info('filtered {} out of {} sentences, {} tokens [{:.2f}% OOVs] in {},{}'.format(self.stats_nskip,self.stats_nsent,self.stats_ntokens,100.0*self.stats_nOOV/self.stats_ntokens,self.fsrc,self.ftgt))
         fs.close()

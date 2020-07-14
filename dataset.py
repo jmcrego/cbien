@@ -57,7 +57,7 @@ class Dataset():
         e.open_write(self.args.name + '.examples.' + self.args.etag)
         nsent = 0
         file_pair = Inputter(self.args.data_src,self.args.data_tgt,self.token,self.vocab)
-        for sentence_tok, sentence_idx, to_predict in file_pair:
+        for ok, sentence_tok, sentence_idx, to_predict in file_pair:
             nsent += 1
 #            print('nsent',str(nsent))
 #            print('tok',sentence_tok)
