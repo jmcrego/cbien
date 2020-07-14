@@ -70,7 +70,9 @@ class Vocab():
         self.tok_to_frq = defaultdict(int)
 
         file_pair = Inputter(file_src,file_tgt,token,self)
-        for src_tgt_sentence_tok, src_tgt_sentence_idx, to_predict in file_pair:
+        for ok, src_tgt_sentence_tok, src_tgt_sentence_idx, to_predict in file_pair:
+            if not ok:
+                continue
             for ngram in file_pair.ngrams(src_tgt_sentence_tok):
                 self.tok_to_frq[ngram] += 1
 
