@@ -74,6 +74,8 @@ class Vocab():
             if not ok:
                 continue
             for ngram in file_pair.ngrams(src_tgt_sentence_tok):
+                if ngram == self.str_pad or ngram == self.str_unk or ngram == self.str_bos or ngram == self.str_eos or ngram == self.idx_sep:
+                    continue
                 self.tok_to_frq[ngram] += 1
 
         ### build vocab
@@ -95,6 +97,8 @@ class Vocab():
                 break
             if frq < min_freq:
                 break
+            if ngram in self.tok_do_idx:
+                continue
             self.tok_to_idx[ngram] = len(self.idx_to_tok)
             self.idx_to_tok.append(ngram)
             ### stats

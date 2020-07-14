@@ -25,14 +25,14 @@ class Examples():
     def open_write(self,fout):
         self.f = gzip.open(fout+'.gz', 'wt')
 
-    def write(self, idx, neg, ctx, etag, nsent, ntok):
+    def write(self, idx, neg, ctx, tag):
         if len(neg) != self.n_negs:
             logging.warning('bad number of negative examples {} should be {}'.format(len(neg), self.n_negs))
             return
         if len(ctx) == 0:
             logging.warning('empty context')
             return
-        line = '{}\t{}:{}:{}\t{}\t{}\t{}\n'.format(len(ctx), etag, nsent, ntok, idx, ' '.join(map(str, neg)), ' '.join(map(str,ctx)))
+        line = '{}\t{}\t{}\t{}\t{}\n'.format(len(ctx), tag, idx, ' '.join(map(str, neg)), ' '.join(map(str,ctx)))
         line.encode("utf-8")
         self.f.write(line)
         self.n += 1
@@ -64,7 +64,7 @@ class Dataset():
 #            print('nsent',str(nsent))
 #            print('tok',sentence_tok)
 #            print('idx',sentence_idx)
-#            print('pred',to_predict)
+#            print('to_predict',to_predict)
             for c in to_predict: ### bos, eos, sep are not considered in to_predict set (c is the index in tok,idx of the token to predict)
                 if random.random() > self.args.pkeep_example: #probability to keep an example
                     continue #discard this token (example)
@@ -73,7 +73,7 @@ class Dataset():
                 ctx = self.get_ctx(sentence_tok, c) #[idx, idx, ...]
                 if len(ctx) == 0:
                     continue
-                e.write(sentence_idx[c], neg, ctx, self.args.etag, nsent, c)
+                e.write(sentence_idx[c], neg, ctx, self.args.etag+':nsent='+str(nsent)+':c='+str(c)+':tok='+sentence_tok[c]+':idx='+str(sentence_idx[c]))
             if nsent % 10000 == 0:
                 logging.info('{} sentences => {} examples'.format(nsent, len(e)))
         logging.info('read {} sentences => {} examples'.format(nsent, len(e)))
