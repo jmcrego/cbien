@@ -67,16 +67,14 @@ class Vocab():
 
     def build(self,file_src,file_tgt,token,min_freq=5,max_size=0,max_ngram=1):
         self.max_ngram = max_ngram
-        self.tok_to_frq = defaultdict(int)
+        self.ngram_to_frq = defaultdict(int)
 
-        file_pair = Inputter(file_src,file_tgt,token,self)
-        for ok, src_tgt_sentence_tok, src_tgt_sentence_idx, to_predict in file_pair:
-            if not ok:
-                continue
+        file_pair = Inputter(file_src,file_tgt,token,self.max_ngram, self.str_sep, self.str_bos, self.str_eos, self.tag_src, self.tag_tgt)
+        for src_tgt_sentence_tok in file_pair:
             for ngram in file_pair.ngrams(src_tgt_sentence_tok):
-                if ngram == self.str_pad or ngram == self.str_unk or ngram == self.str_bos or ngram == self.str_eos or ngram == self.idx_sep:
+                if ngram == self.str_pad or ngram == self.str_unk or ngram == self.str_bos or ngram == self.str_eos: # or ngram == self.str_sep:
                     continue
-                self.tok_to_frq[ngram] += 1
+                self.ngram_to_frq[ngram] += 1
 
         ### build vocab
         self.tok_to_idx[self.str_pad] = self.idx_pad #0
@@ -92,12 +90,12 @@ class Vocab():
         stats_src = defaultdict(int)
         stats_tgt = defaultdict(int)
         stats_ngrams = len(self.idx_to_tok)
-        for ngram, frq in sorted(self.tok_to_frq.items(), key=lambda item: item[1], reverse=True):
+        for ngram, frq in sorted(self.ngram_to_frq.items(), key=lambda item: item[1], reverse=True):
             if len(self.idx_to_tok) == max_size:
                 break
             if frq < min_freq:
                 break
-            if ngram in self.tok_do_idx:
+            if ngram in self.tok_to_idx:
                 continue
             self.tok_to_idx[ngram] = len(self.idx_to_tok)
             self.idx_to_tok.append(ngram)
