@@ -15,24 +15,34 @@ from collections import defaultdict, Counter
 from utils import open_read
 from inputter import Inputter
 
+class Examples():
+
+    def __init__(self, n_negs, fout):
+        self.n_negs = n_negs
+        self.n = 0
+        self.f = gzip.open(fout + '.gz', 'wt')
+
+    def add(self, idx, neg, ctx):
+        self.f.write(str(len(ctx)) + '\t' + str(idx) + ' ' + ' '.join(n_negs) + ' ' + ' '.join(ctx))
+        self.n += 1
+
+    def close (self):
+        self.f.close()
+
+    def __len__(self):
+        return self.n
+
 class Dataset():
 
     def __init__(self, args, vocab, token):
         self.args = args
         self.vocab = vocab
         self.token = token
-#        self.n_negs = args.n_negs
-#        self.window = args.window
-#        self.pkeep_example = args.pkeep_example
-#        self.batch_size = args.batch_size
-#        self.idx_pad = vocab.idx_pad
-#        self.idx_unk = vocab.idx_unk
-#        self.max_ngram = vocab.max_ngram
 
     def examples(self):
         self.stats_ngrams = defaultdict(int)
 
-        examples = []
+        e = Examples(self.args.n_negs,self.args.name + '.examples.' + self.args.etag)
         nsent = 0
         file_pair = Inputter(self.args.data_src,self.args.data_tgt,self.token,self.vocab)
         for sentence_tok, sentence_idx, to_predict in file_pair:
@@ -44,15 +54,18 @@ class Dataset():
                 ctx = self.get_ctx(sentence_tok, c) #[idx, idx, ...]
                 if len(ctx) == 0:
                     continue
-                examples.append([sentence_idx[c], neg, ctx])
+                e.add(sentence_idx[c], neg, ctx)
             if nsent % 10000 == 0:
                 logging.info('{} sentences => {} examples'.format(nsent, len(examples)))
         logging.info('read {} sentences => {} examples'.format(nsent, len(examples)))
         for n,N in sorted(self.stats_ngrams.items(), key=lambda item: item[0], reverse=False): 
             logging.info('{}-grams: {}'.format(n,N))
-        logging.info('saving examples...')
-        fd = open(self.args.name + '.examples.' + self.args.etag , 'wb') 
-        pickle.dump(examples, fd)
+
+        e.close()
+        
+        #logging.info('saving examples...')
+        #fd = open(self.args.name + '.examples.' + self.args.etag , 'wb') 
+        #pickle.dump(examples, fd)
 
     def get_neg(self, idxs):
         neg = []
@@ -119,10 +132,6 @@ class Dataset():
         random.shuffle(batchs) #shuffle batchs
 
         logging.info('saving batches...')
-
-        #fd = open(self.args.name + '.batchs', 'wb')
-        #pickle.dump(batchs, fd)
-
         i = 0
         while True:
             first = i*self.args.shard_size
@@ -133,7 +142,6 @@ class Dataset():
             i += 1
             if last == len(batchs):
                 break
-
 
     def add_pad(self, batch):
         batch_idx = []
@@ -152,23 +160,6 @@ class Dataset():
             msk += [False]*addn
             batch_msk.append(msk)
         return [batch_idx, batch_neg, batch_ctx, batch_msk]
-
-    def add_pad2(self, batch):
-        #batch[k]:
-        ###[0] idx (word to predict)
-        ###[1] [idx] n_negs (negative words)
-        ###[2] [idx] ctx (context ngrams)
-        max_ctx_len = max([len(x[2]) for x in batch])
-        #logging.info('max_len={} lens: {}'.format(max_len, [len(x) for x in batch_ctx]))
-        for k in range(len(batch)):
-            ctx_len = len(batch[k][2])
-            addn = max_ctx_len - ctx_len
-            batch[k][2] += [self.vocab.idx_pad]*addn
-            msk = [True]*ctx_len
-            msk += [False]*addn
-            batch[k].append(msk)
-        return batch
-
 
     def __iter__(self):
         ######################################################
