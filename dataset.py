@@ -32,7 +32,7 @@ class Examples():
         if len(ctx) == 0:
             logging.warning('empty context')
             return
-        line = '{}\t{}\t{}\t{}\t{}\n'.format(len(ctx), tag, idx, ' '.join(map(str, neg)), ' '.join(map(str,ctx)))
+        line = '{}\t{}\t{}\t{}\n'.format(len(ctx), idx, ' '.join(map(str, neg)), ' '.join(map(str,ctx)))
         line.encode("utf-8")
         self.f.write(line)
         self.n += 1
