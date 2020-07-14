@@ -25,14 +25,14 @@ class Examples():
     def open_write(self,fout):
         self.f = gzip.open(fout+'.gz', 'wt')
 
-    def write(self, idx, neg, ctx, etag, nsent):
+    def write(self, idx, neg, ctx, etag, nsent, ntok):
         if len(neg) != self.n_negs:
             logging.warning('bad number of negative examples {} should be {}'.format(len(neg), self.n_negs))
             return
         if len(ctx) == 0:
             logging.warning('empty context')
             return
-        line = '{}\t{}:{}\t{}\t{}\t{}\n'.format(len(ctx), etag, nsent, idx, ' '.join(map(str, neg)), ' '.join(map(str,ctx)))
+        line = '{}\t{}:{}:{}\t{}\t{}\t{}\n'.format(len(ctx), etag, nsent, ntok, idx, ' '.join(map(str, neg)), ' '.join(map(str,ctx)))
         line.encode("utf-8")
         self.f.write(line)
         self.n += 1
@@ -59,6 +59,8 @@ class Dataset():
         file_pair = Inputter(self.args.data_src,self.args.data_tgt,self.token,self.vocab)
         for ok, sentence_tok, sentence_idx, to_predict in file_pair:
             nsent += 1
+            if not ok:
+                continue
 #            print('nsent',str(nsent))
 #            print('tok',sentence_tok)
 #            print('idx',sentence_idx)
@@ -71,7 +73,7 @@ class Dataset():
                 ctx = self.get_ctx(sentence_tok, c) #[idx, idx, ...]
                 if len(ctx) == 0:
                     continue
-                e.write(sentence_idx[c], neg, ctx, self.args.etag, nsent)
+                e.write(sentence_idx[c], neg, ctx, self.args.etag, nsent, c)
             if nsent % 10000 == 0:
                 logging.info('{} sentences => {} examples'.format(nsent, len(e)))
         logging.info('read {} sentences => {} examples'.format(nsent, len(e)))
