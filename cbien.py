@@ -292,8 +292,12 @@ class Args():
    -n_negs          INT : number of negative samples generated      (10)
    -pkeep_example FLOAT : probability to keep an example            (1.0)
    -etag         STRING : output examples tag
+
+To sort all examples by length:
+gunzip -c [name].examples.*.gz | sort -k 1 -g -s | cut -f 2- | gzip -c > [name].examples.gz 
+
  -------- When building batchs -----------------------------------------------
-   -shard_size      INT : number og batchs used                     (1000)
+   -shard_size      INT : number of batchs per shard                (1000)
    -batch_size      INT : batch size used                           (2048)
  -------- When learning ------------------------------------------------------
    -pooling      STRING : max, avg, sum                             (avg)

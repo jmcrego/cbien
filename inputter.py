@@ -61,14 +61,18 @@ class Inputter():
             toks.append(self.vocab.str_bos)
             idxs.append(self.vocab.idx_bos)
 
+            src_ok = False
             for tok in SRC:
                 toks.append(self.vocab.tag_src+tok)
-                idxs.append(self.vocab[self.vocab.tag_src+tok])
-                self.stats_ntokens += 1
+                idxs.append(self.vocab[toks[-1]])
                 if idxs[-1] != self.vocab.idx_unk:
                     to_predict.append(len(toks)-1)
-                else:
-                    self.stats_nOOV += 1
+                    src_ok = True
+
+            if not src_ok:
+                #logging.debug('skip src sentence: <{}> {}:{}'.format(ls,self.fsrc,self.stats_nsent))
+                self.stats_nskip += 1
+                continue
 
             toks.append(self.vocab.str_eos)
             idxs.append(self.vocab.idx_eos)
@@ -77,17 +81,24 @@ class Inputter():
             toks.append(self.vocab.str_bos)
             idxs.append(self.vocab.idx_bos)
 
+            tgt_ok = False
             for tok in TGT:
                 toks.append(self.vocab.tag_tgt+tok)
-                idxs.append(self.vocab[self.vocab.tag_tgt+tok])
-                self.stats_ntokens += 1
+                idxs.append(self.vocab[toks[-1]])
                 if idxs[-1] != self.vocab.idx_unk:
                     to_predict.append(len(toks)-1)
-                else:
-                    self.stats_nOOV += 1
+                    tgt_ok = True
+
+            if not tgt_ok:
+                #logging.debug('skip tgt sentence: <{}> {}:{}'.format(lt,self.ftgt,self.stats_nsent))
+                self.stats_nskip += 1
+                continue
 
             toks.append(self.vocab.str_eos)
             idxs.append(self.vocab.idx_eos)
+
+            self.stats_ntokens += len(SRC) + len(TGT)
+            self.stats_nOOV += toks.count(self.vocab.idx_unk)
 
             yield toks, idxs, to_predict
 

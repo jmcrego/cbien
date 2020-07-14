@@ -18,12 +18,14 @@ from inputter import Inputter
 
 class Examples():
 
-    def __init__(self, n_negs, fout):
+    def __init__(self, n_negs):
         self.n_negs = n_negs
         self.n = 0
+
+    def open_write(self,fout):
         self.f = gzip.open(fout+'.gz', 'wt')
 
-    def add(self, idx, neg, ctx):
+    def write(self, idx, neg, ctx, etag):
         if len(neg) != self.n_negs:
             logging.warning('bad number of negative examples {} should be {}'.format(len(neg), self.n_negs))
             return
@@ -31,16 +33,17 @@ class Examples():
             logging.warning('empty context')
             return
 
-        line = '{}\t{} {} {}\n'.format(len(ctx), idx, ' '.join(map(str, neg)), ' '.join(map(str,ctx)))
+        line = '{}\t{} {} {}\t{}\n'.format(len(ctx), idx, ' '.join(map(str, neg)), ' '.join(map(str,ctx)), etag)
         line.encode("utf-8")
         self.f.write(line)
         self.n += 1
 
-    def close (self):
+    def close(self):
         self.f.close()
 
     def __len__(self):
         return self.n
+
 
 class Dataset():
 
@@ -51,8 +54,8 @@ class Dataset():
 
     def examples(self):
         self.stats_ngrams = defaultdict(int)
-
-        e = Examples(self.args.n_negs, self.args.name + '.examples.' + self.args.etag)
+        e = Examples(self.args.n_negs)
+        e.open_write(self.args.name + '.examples.' + self.args.etag)
         nsent = 0
         file_pair = Inputter(self.args.data_src,self.args.data_tgt,self.token,self.vocab)
         for sentence_tok, sentence_idx, to_predict in file_pair:
@@ -64,7 +67,7 @@ class Dataset():
                 ctx = self.get_ctx(sentence_tok, c) #[idx, idx, ...]
                 if len(ctx) == 0:
                     continue
-                e.add(sentence_idx[c], neg, ctx)
+                e.write(sentence_idx[c], neg, ctx, self.args.etag)
             if nsent % 10000 == 0:
                 logging.info('{} sentences => {} examples'.format(nsent, len(e)))
         logging.info('read {} sentences => {} examples'.format(nsent, len(e)))
@@ -113,7 +116,7 @@ class Dataset():
     def batchs(self):
         ### read examples
         examples = []
-        fexamples = glob.glob(self.args.name + '.examples.*')
+        fexamples = glob.glob(self.args.name + '.examples.gz')
         logging.info('reading examples from {}'.format(fexamples))
         for file in fexamples:
             with open(file,'rb') as f:
