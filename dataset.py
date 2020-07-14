@@ -56,10 +56,27 @@ class Dataset():
         e = Examples(self.args.n_negs)
         e.open_write(self.args.name + '.examples.' + self.args.etag)
         nsent = 0
-        file_pair = Inputter(self.args.data_src,self.args.data_tgt,self.token,self.vocab)
-        for ok, sentence_tok, sentence_idx, to_predict in file_pair:
+        file_pair = Inputter(self.args.data_src,self.args.data_tgt,self.token,self.vocab.max_ngram, self.vocab.str_sep, self.vocab.str_bos, self.vocab.str_eos, self.vocab.tag_src, self.vocab.tag_tgt)
+        for sentence_tok in file_pair:
             nsent += 1
-            if not ok:
+
+            sentence_idx = []
+            to_predict = []
+            is_src = True
+            n_src_valid = 0
+            n_tgt_valid = 0
+            for i in range(len(sentence_tok)):
+                sentence_idx.append(self.vocab[sentence_tok[i]])
+                if sentence_idx[-1] == self.vocab.idx_sep:
+                    is_src = False
+                if sentence_idx[-1] > 4:
+                    to_predict.append(i)
+                    if is_src:
+                        n_src_valid += 1
+                    else:
+                        n_tgt_valid += 1
+
+            if n_src_valid == 0 or n_tgt_valid == 0:
                 continue
 #            print('nsent',str(nsent))
 #            print('tok',sentence_tok)
