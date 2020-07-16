@@ -207,6 +207,7 @@ class Dataset():
                 batchs = self.get_batchs(fshard)
                 logging.info('shuffling batchs...')
                 random.shuffle(batchs) #shuffle batchs
+                logging.info('iterating over {} batchs'.format(len(batchs)))
 
                 for batch in batchs:
                     idx = np.array(batch[0])
