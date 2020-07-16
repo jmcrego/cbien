@@ -52,16 +52,6 @@ def do_examples(args):
     dataset = Dataset(args,vocab,token)
     dataset.examples()
 
-def do_batchs(args):
-    ###
-    ### build name.examples
-    ###
-    token = OpenNMTTokenizer(args.name + '.token')
-    vocab = Vocab()
-    vocab.read(args.name + '.vocab')
-    dataset = Dataset(args,vocab,token)
-    dataset.batchs()
-
 def do_train(args):
     token = OpenNMTTokenizer(args.name + '.token')
     vocab = Vocab()
@@ -252,7 +242,7 @@ class Args():
         self.voc_maxn = 1
         self.tok_conf = None
         self.train = None
-        self.shard_size = 1000
+#        self.shard_size = 1000
         self.pkeep_example = 1.0
         self.pooling = 'avg'
         self.batch_size = 2048
@@ -289,17 +279,12 @@ class Args():
    -tok_conf       FILE : YAML file with onmt tokenization options  (space)
  -------- When building examples ---------------------------------------------
    -window          INT : window size (use 0 for whole sentence)    (0)
-   -n_negs          INT : number of negative samples generated      (10)
    -pkeep_example FLOAT : probability to keep an example            (1.0)
    -etag         STRING : output examples tag
-
-To sort all examples by length:
-gunzip -c [name].examples.*.gz | shuf | LC_ALL=C sort --parallel 8 -s -T . -S 2M -k 1 -g | cut -f 2- | gzip -c > [name].examples.gz 
-
- -------- When building batchs -----------------------------------------------
-   -shard_size      INT : number of batchs per shard                (1000)
-   -batch_size      INT : batch size used                           (2048)
+Shuffle and split examples into shards: gunzip -c [name].examples.*.gz | shuf | split -a 5 -l 10000000 - [name].shard_ --filter='gzip -c > $FILE.gz'
  -------- When learning ------------------------------------------------------
+   -batch_size      INT : batch size used                           (2048)
+   -n_negs          INT : number of negative samples generated      (10)
    -pooling      STRING : max, avg, sum                             (avg)
    -embedding_size  INT : embedding dimension                       (300)
    -max_epochs      INT : stop learning after this number of epochs (1)
@@ -340,7 +325,7 @@ gunzip -c [name].examples.*.gz | shuf | LC_ALL=C sort --parallel 8 -s -T . -S 2M
             elif (tok=="-voc_maxn" and len(argv)): self.voc_maxn = int(argv.pop(0))
             elif (tok=="-tok_conf" and len(argv)): self.tok_conf = argv.pop(0)
             elif (tok=="-use_bos_eos"): self.use_bos_eos = True
-            elif (tok=="-shard_size" and len(argv)): self.shard_size = int(argv.pop(0))
+#            elif (tok=="-shard_size" and len(argv)): self.shard_size = int(argv.pop(0))
             elif (tok=="-pkeep_example" and len(argv)): self.pkeep_example = float(argv.pop(0))
             elif (tok=="-batch_size" and len(argv)): self.batch_size = int(argv.pop(0))
             elif (tok=="-max_epochs" and len(argv)): self.max_epochs = int(argv.pop(0))
@@ -417,9 +402,6 @@ if __name__ == "__main__":
 
     elif args.mode == 'examples':
         do_examples(args)
-
-    elif args.mode == 'batchs':
-        do_batchs(args)
 
     elif args.mode == 'train':
         do_train(args)

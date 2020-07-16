@@ -18,21 +18,17 @@ from inputter import Inputter
 
 class Examples():
 
-    def __init__(self, n_negs):
-        self.n_negs = n_negs
+    def __init__(self):
         self.n = 0
 
     def open_write(self,fout):
         self.f = gzip.open(fout+'.gz', 'wt')
 
-    def write(self, idx, neg, ctx, tag):
-        if len(neg) != self.n_negs:
-            logging.warning('bad number of negative examples {} should be {}'.format(len(neg), self.n_negs))
-            return
+    def write(self, idx, ctx):
         if len(ctx) == 0:
             logging.warning('empty context')
             return
-        line = '{}\t{}\t{}\t{}\n'.format(len(ctx), idx, ' '.join(map(str, neg)), ' '.join(map(str,ctx)))
+        line = '{} {}\n'.format( idx, ' '.join(map(str,ctx)))
         line.encode("utf-8")
         self.f.write(line)
         self.n += 1
@@ -53,7 +49,7 @@ class Dataset():
 
     def examples(self):
         self.stats_ngrams = defaultdict(int)
-        e = Examples(self.args.n_negs)
+        e = Examples()
         e.open_write(self.args.name + '.examples.' + self.args.etag)
         stats_n_src = 0
         stats_n_tgt = 0
@@ -96,19 +92,13 @@ class Dataset():
             stats_n_tgt += n_tgt
             stats_nunk_src += nunk_src
             stats_nunk_tgt += nunk_tgt
-#            print('nsent',str(nsent))
-#            print('tok',sentence_tok)
-#            print('idx',sentence_idx)
-#            print('to_predict',to_predict)
             for c in to_predict: ### bos, eos, sep are not considered in to_predict set (c is the index in tok,idx of the token to predict)
                 if random.random() > self.args.pkeep_example: #probability to keep an example
                     continue #discard this token (example)
-                neg = self.get_neg(sentence_idx) #[idx, idx, ...]
-#                print('c={}'.format(c))
                 ctx = self.get_ctx(sentence_tok, c) #[idx, idx, ...]
                 if len(ctx) == 0:
                     continue
-                e.write(sentence_idx[c], neg, ctx, self.args.etag+':nsent='+str(nsent)+':c='+str(c)+':tok='+sentence_tok[c]+':idx='+str(sentence_idx[c]))
+                e.write(sentence_idx[c], ctx) #, self.args.etag+':nsent='+str(nsent)+':c='+str(c)+':tok='+sentence_tok[c]+':idx='+str(sentence_idx[c]))
             if nsent % 10000 == 0:
                 logging.info('{} sentences => {} examples {}/{} tokens {:.2f}/{:.2f} %OOV'.format(nsent, len(e), stats_n_src,stats_n_tgt,100.0*stats_nunk_src/stats_n_src,100.0*stats_nunk_tgt/stats_n_tgt))
         logging.info('read {} sentences => {} examples {}/{} tokens {:.2f}/{:.2f} %OOV'.format(nsent, len(e), stats_n_src,stats_n_tgt,100.0*stats_nunk_src/stats_n_src,100.0*stats_nunk_tgt/stats_n_tgt))
@@ -116,9 +106,6 @@ class Dataset():
             logging.info('{}-grams: {}'.format(n,N))
 
         e.close()
-        #logging.info('saving examples...')
-        #fd = open(self.args.name + '.examples.' + self.args.etag , 'wb') 
-        #pickle.dump(examples, fd)
 
     def get_neg(self, idxs):
         neg = []
@@ -152,25 +139,22 @@ class Dataset():
                 if idx == self.vocab.idx_unk or idx == self.vocab.idx_bos or idx == self.vocab.idx_eos or idx == self.vocab.idx_sep: ### do not consider <unk>, <bos>, <eos>, <sep>
                     break
                 ctx.append(idx)
-#                print(idx, ' '.join(toks[first:lastplusone]))
                 self.stats_ngrams[lastplusone-first] += 1
 
         return ctx
 
 
-    def batchs(self):
+    def get_batchs(self,fshard):
         ### read examples
-        logging.info('reading examples')
-
+        logging.info('reading examples from shard {}'.format(fshard))
         batchs = []
         batch = []
-        with gzip.open(self.args.name + '.examples.gz','rb') as f:
+        with gzip.open(fshard,'rb') as f:
             for l in f:
                 l = l.decode('utf8')
-                idx, neg, ctx = l.rstrip().split('\t')
-                neg = neg.split(' ')
-                ctx = ctx.split(' ')
-                batch.append([ int(idx), list(map(int, neg)), list(map(int, ctx)) ])
+                idx_ctx = l.rstrip().split(' ')
+                neg = self.get_neg(idx_ctx)
+                batch.append([ int(idx_ctx.pop(0)), list(map(int, neg)), list(map(int, idx_ctx)) ])
                 if len(batch) == self.args.batch_size:
                     batchs.append(self.add_pad(batch))
                     batch = []
@@ -178,10 +162,7 @@ class Dataset():
             if len(batch):
                 batchs.append(self.add_pad(batch)) ### this batch may have few examples
             logging.info('built {} batchs with up to {} examples each'.format(len(batchs),self.args.batch_size))
-
-
-        logging.info('shuffling batches...')
-        random.shuffle(batchs) #shuffle batchs
+        return batchs
 
         logging.info('saving batches...')
         i = 0
@@ -220,30 +201,31 @@ class Dataset():
         ### train ############################################
         ######################################################
         if self.args.mode == 'train':
-            fshards = glob.glob(self.args.name + '.batchs.shard*')
+            fshards = glob.glob(self.args.name + '.shard_?????.gz')
             random.shuffle(fshards)
             for fshard in fshards:
-                with open(fshard,'rb') as f:
-                    batchs = pickle.load(f)
-                    logging.info('read {} batchs'.format(len(batchs)))
-                    for batch in batchs:
-                        print(len(batch[0]))
-                        print(batch[0])
-                        idx = np.array(batch[0])
 
-                        print(len(batch[1]))
-#                        print(batch[1][0])
-                        neg = np.array(batch[1])
+                batchs = self.get_batchs(fshard)
+                logging.info('shuffling batches...')
+                random.shuffle(batchs) #shuffle batchs
+                for batch in batchs:
+                    print(len(batch[0]))
+                    print(batch[0])
+                    idx = np.array(batch[0])
 
-                        print(len(batch[2]))
-#                        print(batch[2][0])
-                        ctx = np.array(batch[2])
+                    print(len(batch[1]))
+#                    print(batch[1][0])
+                    neg = np.array(batch[1])
 
-                        print(len(batch[3]))
-#                        print(batch[3][0])
-                        msk = np.array(batch[3])
+                    print(len(batch[2]))
+#                    print(batch[2][0])
+                    ctx = np.array(batch[2])
 
-                        yield idx, neg, ctx, msk
+                    print(len(batch[3]))
+#                    print(batch[3][0])
+                    msk = np.array(batch[3])
+
+                    yield idx, neg, ctx, msk
 
         ######################################################
         ### error ############################################
