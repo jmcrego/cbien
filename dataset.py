@@ -94,7 +94,7 @@ class Dataset():
             stats_nunk_src += nunk_src
             stats_nunk_tgt += nunk_tgt
             for c in to_predict: ### bos, eos, sep are not considered in to_predict set (c is the index in tok,idx of the token to predict)
-                if random.random() > self.args.pkeep_example: #probability to keep an example
+                if random.random() > self.args.pkeep: #probability to keep an example
                     continue #discard this token (example)
                 ctx = self.get_ctx(sentence_tok, c) #[idx, idx, ...]
                 if len(ctx) == 0:

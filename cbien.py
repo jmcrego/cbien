@@ -261,7 +261,7 @@ class Args():
         self.tok_conf = None
         self.train = None
 #        self.shard_size = 1000
-        self.pkeep_example = 1.0
+        self.pkeep = 1.0
         self.pooling = 'avg'
         self.batch_size = 2048
         self.max_epochs = 1
@@ -302,7 +302,7 @@ class Args():
    -data_src      FILES : source file
    -data_tgt      FILES : target file
    -window          INT : window size (use 0 for whole sentence)    (0)
-   -pkeep_example FLOAT : probability to keep an example            (1.0)
+   -pkeep         FLOAT : probability to keep an example            (1.0)
    -etag         STRING : output examples tag
 
  -------- When learning (mode train) -----------------------------------------
@@ -354,7 +354,7 @@ To allow validation:
             elif (tok=="-tok_conf" and len(argv)): self.tok_conf = argv.pop(0)
             #
             elif (tok=="-window" and len(argv)): self.window = int(argv.pop(0))
-            elif (tok=="-pkeep_example" and len(argv)): self.pkeep_example = float(argv.pop(0))
+            elif (tok=="-pkeep" and len(argv)): self.pkeep_example = float(argv.pop(0))
             elif (tok=="-etag" and len(argv)): self.etag = argv.pop(0)            
             #
             elif (tok=="-batch_size" and len(argv)): self.batch_size = int(argv.pop(0))
