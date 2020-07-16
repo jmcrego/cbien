@@ -42,10 +42,11 @@ class Examples():
 
 class Dataset():
 
-    def __init__(self, args, vocab, token):
+    def __init__(self, args, vocab, token, isValid=False):
         self.args = args
         self.vocab = vocab
         self.token = token
+        self.isValid = isValid
 
     def examples(self):
         self.stats_ngrams = defaultdict(int)
@@ -200,7 +201,10 @@ class Dataset():
         ### train ############################################
         ######################################################
         if self.args.mode == 'train':
-            fshards = glob.glob(self.args.name + '.shard_?????.gz')
+            if self.isValid:
+                fshards = glob.glob(self.args.name + '.valid_?????.gz')
+            else:
+                fshards = glob.glob(self.args.name + '.shard_?????.gz')
             random.shuffle(fshards)
             for n,fshard in enumerate(fshards):
 

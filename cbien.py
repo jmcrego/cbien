@@ -85,6 +85,18 @@ def do_train(args):
             if n_steps % args.save_every_n_steps == 0:
                 save_model(args.name, model, n_steps, args.keep_last_n)
                 save_optim(args.name, optimizer)
+            if n_steps & args.valid_every_n_steps == 0:
+                pass
+                losses_valid = []
+                dataset_valid = Dataset(args, token, vocab)
+                with torch.no_grad():
+                    model.eval()
+                    for batch_idx, batch_neg, batch_ctx, batch_msk in dataset_valid:
+                        loss = model.forward(batch_idx, batch_neg, batch_ctx, batch_msk)
+                        losses_valid.append(loss.data.cpu().detach().numpy())
+                accum_loss_valid = np.mean(losses_valid)
+                logging.info('Validation n_epoch={} n_steps={} Loss={:.6f}'.format(n_epochs,n_steps,accum_loss_valid))
+
         if n_epochs >= args.max_epochs:
             logging.info('Stop (max epochs reached)')
             break
@@ -256,13 +268,14 @@ class Args():
         self.beta2 = 0.999
         self.keep_last_n = 5
         self.save_every_n_steps = 5000
+        self.valid_every_n_steps = 10000
         self.report_every_n_steps = 500
         self.k = 5
         self.sim = 'cos'
         self.prog = argv.pop(0)
         self.usage = '''usage: {} -name STRING -mode STRING -data_src FILES -data_tgt FILES [Options]
    -name         STRING : experiment name
-   -mode         STRING : preprocess, dataset, train, sentence-vectors, word-vectors, word-similarity
+   -mode         STRING : preprocess, examples, train, sentence-vectors, word-vectors
 
  Options:
    -seed            INT : seed value                                (12345)
@@ -270,36 +283,45 @@ class Args():
    -log_level     LEVEL : debug, info, warning, critical, error     (debug) 
    -cuda                : use CUDA                                  (False)
    -h                   : this help
- -------- When building vocab ------------------------------------------------
+
+ -------- When building vocab (mode preprocess) ------------------------------
    -data_src      FILES : source file
    -data_tgt      FILES : target file
    -voc_minf        INT : min frequency to consider a word          (5)
    -voc_maxs        INT : max size of vocabulary (0 for unlimitted) (0)
    -voc_maxn        INT : consider up to this word ngrams           (1)
    -tok_conf       FILE : YAML file with onmt tokenization options  (space)
- -------- When building examples ---------------------------------------------
+
+ -------- When building examples (mode examples) -----------------------------
    -data_src      FILES : source file
    -data_tgt      FILES : target file
    -window          INT : window size (use 0 for whole sentence)    (0)
    -pkeep_example FLOAT : probability to keep an example            (1.0)
    -etag         STRING : output examples tag
-Shuffle and split examples into shards: gunzip -c [name].examples.*.gz | shuf | split -a 5 -l 2000000 - [name].shard_ --filter='gzip -c > $FILE.gz'
- -------- When learning ------------------------------------------------------
+
+ -------- When learning (mode train) -----------------------------------------
    -batch_size      INT : batch size used                           (2048)
    -n_negs          INT : number of negative samples                (10)
    -pooling      STRING : max, avg, sum                             (avg)
    -embedding_size  INT : embedding dimension                       (300)
    -max_epochs      INT : stop learning after this number of epochs (1)
+
    -learning_rate FLOAT : learning rate for Adam optimizer          (0.001)
    -eps           FLOAT : eps for Adam optimizer                    (1e-08)
    -beta1         FLOAT : beta1 for Adam optimizer                  (0.9)
    -beta2         FLOAT : beta2 for Adam optimizer                  (0.999)
+
    -keep_last       INT : keep last n checkpoints                   (5)
    -save_every      INT : save checkpoint every n learning steps    (5000)
+   -valid_every     INT : run validation every n learning steps     (5000)
    -report_every    INT : print report every n learning steps       (500)
- -------- When inference -----------------------------------------------------
+
+ -------- When inference (mode sentence-vectors or word-vectors) -------------
    -k               INT : find k closest words to each file ngram   (5)
    -sim          STRING : cos, pairwise                             (cos)
+
+Shuffle and split examples into shards: 
+  gunzip -c [name].examples.*.gz | shuf | split -a 5 -l 2000000 - [name].shard_ --filter='gzip -c > $FILE.gz'
 
 *** The script needs:
   + pytorch:   conda install pytorch torchvision cudatoolkit=10.1 -c pytorch
@@ -336,8 +358,10 @@ Shuffle and split examples into shards: gunzip -c [name].examples.*.gz | shuf | 
             elif (tok=="-eps" and len(argv)): self.eps = float(argv.pop(0))
             elif (tok=="-beta1" and len(argv)): self.beta1 = float(argv.pop(0))
             elif (tok=="-beta2" and len(argv)): self.beta2 = float(argv.pop(0))
+            #
             elif (tok=="-keep_last" and len(argv)): self.keep_last_n = int(argv.pop(0))
             elif (tok=="-save_every" and len(argv)): self.save_every_n_steps = int(argv.pop(0))
+            elif (tok=="-valid_every" and len(argv)): self.valid_every_n_steps = int(argv.pop(0))
             elif (tok=="-report_every" and len(argv)): self.report_every_n_steps = int(argv.pop(0))
             #
             elif (tok=="-cuda"): self.cuda = True
