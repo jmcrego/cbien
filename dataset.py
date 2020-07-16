@@ -146,37 +146,34 @@ class Dataset():
 
     def get_batchs(self,fshard):
         ### read examples
-        logging.info('reading examples from shard {}'.format(fshard))
-        batchs = []
-        batch = []
+        logging.info('reading examples in shard {}'.format(fshard))
+        examples = []
         with gzip.open(fshard,'rb') as f:
             for l in f:
                 l = l.decode('utf8')
                 idx_ctx = l.rstrip().split(' ')
-                neg = self.get_neg(idx_ctx)
-                batch.append([ int(idx_ctx.pop(0)), list(map(int, neg)), list(map(int, idx_ctx)) ])
-                if len(batch) == self.args.batch_size:
-                    batchs.append(self.add_pad(batch))
-                    batch = []
+                examples.append(idx_ctx)
 
-            if len(batch):
-                batchs.append(self.add_pad(batch)) ### this batch may have few examples
-            logging.info('built {} batchs with up to {} examples each'.format(len(batchs),self.args.batch_size))
+         ### sort examples by len
+        logging.info('sorting {} examples in shard (by length) to minimize padding'.format(len(examples)))
+        length = [len(examples[k]) for k in range(len(examples))] #length of sentences in this shard
+        index_examples = np.argsort(np.array(length)) ### These are indexs of examples
+
+        logging.info('building batchs')
+        batchs = []
+        batch = []
+        for index in index_examples:
+            idx_ctx = examples[index]
+            neg = self.get_neg(idx_ctx)
+            batch.append([ int(idx_ctx.pop(0)), list(map(int, neg)), list(map(int, idx_ctx)) ])
+            if len(batch) == self.args.batch_size:
+                batchs.append(self.add_pad(batch))
+                batch = []
+        if len(batch):
+            batchs.append(self.add_pad(batch)) ### this batch may have few examples
+        logging.info('built {} batchs with up to {} examples each'.format(len(batchs),self.args.batch_size))
         return batchs
 
-        logging.info('saving batches...')
-        i = 0
-        while True:
-            first = i*self.args.shard_size
-            last = min(len(batchs), (i+1)*self.args.shard_size)
-
-            fd = open(self.args.name + '.batchs.shard' + str(i), 'wb')
-            pickle.dump(batchs[first:last], fd)
-
-            logging.info('saved {} with {} batchs'.format(self.args.name + '.batchs.shard' + str(i), last-first))
-            i += 1
-            if last == len(batchs):
-                break
 
     def add_pad(self, batch):
         batch_idx = []
@@ -206,8 +203,9 @@ class Dataset():
             for fshard in fshards:
 
                 batchs = self.get_batchs(fshard)
-                logging.info('shuffling batches...')
+                logging.info('shuffling batchs...')
                 random.shuffle(batchs) #shuffle batchs
+
                 for batch in batchs:
                     print(len(batch[0]))
                     print(batch[0])
