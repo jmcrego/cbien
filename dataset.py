@@ -146,11 +146,8 @@ class Dataset():
 
 
     def get_batchs(self,fshard,n,N):
-        valid=''
-        if self.isValid:
-            valid='Validation '
         ### read examples
-        logging.info('{}reading examples in shard {}/{} {}'.format(valid,n,N,fshard))
+        logging.info('{}reading examples in shard {}/{} {}'.format(n,N,fshard))
         examples = []
         with gzip.open(fshard,'rb') as f:
             for l in f:
@@ -161,11 +158,11 @@ class Dataset():
                 examples.append(idxs)
 
          ### sort examples by len
-        logging.info('{}found {} examples in shard (shuffling...)'.format(valid,len(examples)))
+        logging.info('found {} examples in shard (shuffling...)'.format(len(examples)))
         length = [len(examples[k]) for k in range(len(examples))] #length of sentences in this shard
         index_examples = np.argsort(np.array(length)) ### These are indexs of examples
 
-        logging.info('{}building batchs sized of {} examples'.format(valid,self.args.batch_size))
+        logging.info('building batchs sized of {} examples'.format(self.args.batch_size))
         batchs = []
         batch = []
         for index in index_examples:
@@ -177,7 +174,7 @@ class Dataset():
                 batch = []
         if len(batch):
             batchs.append(self.add_pad(batch)) ### this batch may have few examples
-        logging.info('{}found {} batchs'.format(valid,len(batchs)))
+        logging.info('found {} batchs'.format(len(batchs)))
         return batchs
 
 
@@ -206,17 +203,17 @@ class Dataset():
         if self.args.mode == 'train':
             if self.isValid:
                 fshards = glob.glob(self.args.name + '.valid_?????.gz')
-                valid='Validation '
             else:
                 fshards = glob.glob(self.args.name + '.shard_?????.gz')
-                valid=''
+            self.nshards = len(fshards)
+
             random.shuffle(fshards)
             for n,fshard in enumerate(fshards):
 
                 batchs = self.get_batchs(fshard,n+1,len(fshards))
-                logging.info('{}shuffling batchs...'.format(valid))
+                logging.info('shuffling batchs...')
                 random.shuffle(batchs) #shuffle batchs
-                logging.info('{}iterating over {} batchs'.format(valid,len(batchs)))
+                logging.info('iterating over {} batchs'.format(len(batchs)))
 
                 for batch in batchs:
                     idx = np.array(batch[0])

@@ -78,29 +78,37 @@ def do_train(args):
             optimizer.step()
             n_steps += 1
             losses.append(loss.data.cpu().detach().numpy())
+
             if n_steps % args.report_every_n_steps == 0:
                 accum_loss = np.mean(losses)
                 logging.info('{} n_epoch={} n_steps={} Loss={:.6f}'.format(args.mode, n_epochs,n_steps,accum_loss))
                 losses = []
+
             if n_steps % args.save_every_n_steps == 0:
                 save_model(args.name, model, n_steps, args.keep_last_n)
                 save_optim(args.name, optimizer)
-            if n_steps % args.valid_every_n_steps == 0: ########## validation
-                losses_valid = []
-                dataset_valid = Dataset(args, vocab, token, isValid=True)
-                with torch.no_grad():
-                    model.eval()
-                    for batch_idx, batch_neg, batch_ctx, batch_msk in dataset_valid:
-                        loss = model.forward(batch_idx, batch_neg, batch_ctx, batch_msk)
-                        losses_valid.append(loss.data.cpu().detach().numpy())
-                accum_loss_valid = np.mean(losses_valid)
-                logging.info('Validation n_epoch={} n_steps={} Loss={:.6f}'.format(n_epochs,n_steps,accum_loss_valid))
+
+            if n_steps % args.valid_every_n_steps == 0:
+                do_validation(args,vocab,token,n_epochs,n_steps)
 
         if n_epochs >= args.max_epochs:
             logging.info('Stop (max epochs reached)')
             break
     save_model(args.name, model, n_steps, args.keep_last_n)
     save_optim(args.name, optimizer)
+
+def do_validation(args,vocab,token,n_epochs,n_steps):
+    losses = []
+    dataset = Dataset(args, vocab, token, isValid=True)
+    if dataset.nshards == 0:
+        return
+    with torch.no_grad():
+        model.eval()
+        for batch_idx, batch_neg, batch_ctx, batch_msk in dataset:
+            loss = model.forward(batch_idx, batch_neg, batch_ctx, batch_msk)
+            losses.append(loss.data.cpu().detach().numpy())
+    accum_loss = np.mean(losses)
+    logging.info('VALIDATION n_epoch={} n_steps={} Loss={:.6f}'.format(n_epochs,n_steps,accum_loss))
 
 def do_sentence_vectors(args):
     if not os.path.exists(args.name + '.token'):
