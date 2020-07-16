@@ -332,7 +332,7 @@ class Args():
 Shuffle and split examples into shards: 
   gunzip -c [name].examples.*.gz | shuf | split -a 5 -l 2000000 - [name].shard_ --filter='gzip -c > $FILE.gz'
 To allow validation:
-  afte building shards replace one/some [name].shard_????? by [name].valid_?????
+  after building shards replace one/some [name].shard_????? by [name].valid_?????
 
 *** The script needs:
   + pytorch:   conda install pytorch torchvision cudatoolkit=10.1 -c pytorch
