@@ -86,7 +86,6 @@ def do_train(args):
                 save_model(args.name, model, n_steps, args.keep_last_n)
                 save_optim(args.name, optimizer)
             if n_steps & args.valid_every_n_steps == 0:
-                pass
                 losses_valid = []
                 dataset_valid = Dataset(args, vocab, token, isValid=True)
                 with torch.no_grad():
