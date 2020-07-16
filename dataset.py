@@ -144,9 +144,9 @@ class Dataset():
         return ctx
 
 
-    def get_batchs(self,fshard):
+    def get_batchs(self,fshard,n,N):
         ### read examples
-        logging.info('reading examples in shard {}'.format(fshard))
+        logging.info('reading examples in shard {}/{} {}'.format(n,N,fshard))
         examples = []
         with gzip.open(fshard,'rb') as f:
             for l in f:
@@ -202,9 +202,9 @@ class Dataset():
         if self.args.mode == 'train':
             fshards = glob.glob(self.args.name + '.shard_?????.gz')
             random.shuffle(fshards)
-            for fshard in fshards:
+            for n,fshard in enumerate(fshards):
 
-                batchs = self.get_batchs(fshard)
+                batchs = self.get_batchs(fshard,n+1,len(fshards))
                 logging.info('shuffling batchs...')
                 random.shuffle(batchs) #shuffle batchs
                 logging.info('iterating over {} batchs'.format(len(batchs)))
