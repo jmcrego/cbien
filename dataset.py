@@ -147,7 +147,7 @@ class Dataset():
 
     def get_batchs(self,fshard,n,N):
         ### read examples
-        logging.info('{}reading examples in shard {}/{} {}'.format(n,N,fshard))
+        logging.info('reading examples in shard {}/{} {}'.format(n,N,fshard))
         examples = []
         with gzip.open(fshard,'rb') as f:
             for l in f:
