@@ -80,9 +80,9 @@ def do_train(args):
     losses = []
     while True:
         n_epochs += 1
-        for batch in dataset:
+        for batch_idx, batch_neg, batch_ctx, batch_msk in dataset:
             model.train()
-            loss = model.forward(batch)
+            loss = model.forward(batch_idx, batch_neg, batch_ctx, batch_msk)
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
@@ -294,7 +294,7 @@ class Args():
    -etag         STRING : output examples tag
 
 To sort all examples by length:
-gunzip -c [name].examples.*.gz | shuf | sort -k 1 -g -s | cut -f 2- | gzip -c > [name].examples.gz 
+gunzip -c [name].examples.*.gz | shuf | LC_ALL=C sort --parallel 8 -s -T . -S 2M -k 1 -g | cut -f 2- | gzip -c > [name].examples.gz 
 
  -------- When building batchs -----------------------------------------------
    -shard_size      INT : number of batchs per shard                (1000)

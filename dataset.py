@@ -164,35 +164,21 @@ class Dataset():
 
         batchs = []
         batch = []
-        with gzip.open(self.args.name + '.examples.gz','rb') as f:        
+        with gzip.open(self.args.name + '.examples.gz','rb') as f:
             for l in f:
                 l = l.decode('utf8')
-                idx, neg, ctx = l.split('\t')
-                batch.append([ int(idx), map(int, neg.split(' ')), map(int, ctx.split(' ')) ])
+                idx, neg, ctx = l.rstrip().split('\t')
+                neg = neg.split(' ')
+                ctx = ctx.split(' ')
+                batch.append([ int(idx), list(map(int, neg)), list(map(int, ctx)) ])
                 if len(batch) == self.args.batch_size:
                     batchs.append(self.add_pad(batch))
                     batch = []
+
             if len(batch):
                 batchs.append(self.add_pad(batch)) ### this batch may have few examples
             logging.info('built {} batchs with up to {} examples each'.format(len(batchs),self.args.batch_size))
 
-#        logging.info('shuffling {} examples...'.format(len(examples)))
-#        random.shuffle(examples) #shuffle examples
-
-#        logging.info('batching...')
-#        batchs = []
-#        length = [len(examples[k][2]) for k in range(len(examples))] #length of ctx examples
-#        ind_examples = np.argsort(np.array(length)) ### These are indexs of examples sorted by length of its context
-
-#        batch = []
-#        for ind in ind_examples:
-#            batch.append(examples[ind])
-#            if len(batch) == self.args.batch_size:
-#                batchs.append(self.add_pad(batch))
-#                batch = []
-#        if len(batch):
-#            batchs.append(self.add_pad(batch)) ### this batch may have few examples
-#        logging.info('built {} batchs with up to {} examples each'.format(len(batchs),self.args.batch_size))
 
         logging.info('shuffling batches...')
         random.shuffle(batchs) #shuffle batchs
@@ -202,8 +188,10 @@ class Dataset():
         while True:
             first = i*self.args.shard_size
             last = min(len(batchs), (i+1)*self.args.shard_size)
+
             fd = open(self.args.name + '.batchs.shard' + str(i), 'wb')
             pickle.dump(batchs[first:last], fd)
+
             logging.info('saved {} with {} batchs'.format(self.args.name + '.batchs.shard' + str(i), last-first))
             i += 1
             if last == len(batchs):
@@ -232,15 +220,30 @@ class Dataset():
         ### train ############################################
         ######################################################
         if self.args.mode == 'train':
-            with open(self.args.name + '.batchs','rb') as f:
-                batchs = pickle.load(f)
-                logging.info('read {} batchs'.format(len(batchs)))
-                for batch in batchs:
-                    batch = np.array(batch)
-                    print(batch.shape)
-                    print(batch[0])
-                    sys.exit()
-                    yield batch #batch[k] contains [idx, [n_negs], [ctx], [msk]]
+            fshards = glob.glob(self.args.name + '.batchs.shard*')
+            random.shuffle(fshards)
+            for fshard in fshards:
+                with open(fshard,'rb') as f:
+                    batchs = pickle.load(f)
+                    logging.info('read {} batchs'.format(len(batchs)))
+                    for batch in batchs:
+                        print(len(batch[0]))
+                        print(batch[0])
+                        idx = np.array(batch[0])
+
+                        print(len(batch[1]))
+#                        print(batch[1][0])
+                        neg = np.array(batch[1])
+
+                        print(len(batch[2]))
+#                        print(batch[2][0])
+                        ctx = np.array(batch[2])
+
+                        print(len(batch[3]))
+#                        print(batch[3][0])
+                        msk = np.array(batch[3])
+
+                        yield idx, neg, ctx, msk
 
         ######################################################
         ### error ############################################
