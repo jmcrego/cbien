@@ -161,7 +161,7 @@ class Dataset():
         length = [len(examples[k]) for k in range(len(examples))] #length of sentences in this shard
         index_examples = np.argsort(np.array(length)) ### These are indexs of examples
 
-        logging.info('building batchs')
+        logging.info('building batchs sized of {}'.format(self.args.batch_size))
         batchs = []
         batch = []
         for index in index_examples:
@@ -173,7 +173,7 @@ class Dataset():
                 batch = []
         if len(batch):
             batchs.append(self.add_pad(batch)) ### this batch may have few examples
-        logging.info('built {} batchs with up to {} examples each'.format(len(batchs),self.args.batch_size))
+        logging.info('found {} batchs'.format(len(batchs)))
         return batchs
 
 
