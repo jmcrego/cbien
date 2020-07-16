@@ -155,6 +155,8 @@ class Dataset():
                 idxs = [idx_ctx.pop(0)]
                 ctx = idx_ctx[0].split(' ')
                 examples.append(idxs.extend(ctx))
+                if len(examples) == 1:
+                    print(examples[0])
 
          ### sort examples by len
         logging.info('sorting {} examples in shard (by length) to minimize padding'.format(len(examples)))
