@@ -209,22 +209,10 @@ class Dataset():
                 random.shuffle(batchs) #shuffle batchs
 
                 for batch in batchs:
-                    print(len(batch[0]))
-                    print(batch[0])
                     idx = np.array(batch[0])
-
-                    print(len(batch[1]))
-#                    print(batch[1][0])
                     neg = np.array(batch[1])
-
-                    print(len(batch[2]))
-#                    print(batch[2][0])
                     ctx = np.array(batch[2])
-
-                    print(len(batch[3]))
-#                    print(batch[3][0])
                     msk = np.array(batch[3])
-
                     yield idx, neg, ctx, msk
 
         ######################################################

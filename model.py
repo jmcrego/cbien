@@ -144,13 +144,9 @@ class Word2Vec(nn.Module):
 
     def forward(self, batch_idx, batch_neg, batch_ctx, batch_msk):
         idx = torch.as_tensor(batch_idx) #batch of center (list:bs)
-        print(idx[0])
         neg = torch.as_tensor(batch_neg) #batch of context (list:bs of list:nc)
-        print(neg[0])
         ctx = torch.as_tensor(batch_ctx) #batch of negative (list:bs of list:nn)
-        print(ctx[0])
         msk = torch.as_tensor(batch_msk) #batch of contex masks (list:bs of list:nc)
-        print(msk[0])
 
         if msk.type() != 'torch.BoolTensor':
             logging.error('bad msk type {}'.format(msk.type()))
