@@ -198,7 +198,7 @@ class Dataset():
         ### train ############################################
         ######################################################
         if self.args.mode == 'train':
-            fshards = glob.glob(self.args.name + '.shard_?????.gz')
+            fshards = glob.glob(self.args.name + '.shard_aaaaa.gz')
             random.shuffle(fshards)
             for fshard in fshards:
 
