@@ -89,7 +89,7 @@ def do_train(args):
                 save_optim(args.name, optimizer)
 
             if n_steps % args.valid_every_n_steps == 0:
-                do_validation(args,vocab,token,n_epochs,n_steps)
+                do_validation(args,vocab,token,n_epochs,n_steps,model)
 
         if n_epochs >= args.max_epochs:
             logging.info('Stop (max epochs reached)')
@@ -97,8 +97,9 @@ def do_train(args):
     save_model(args.name, model, n_steps, args.keep_last_n)
     save_optim(args.name, optimizer)
 
-def do_validation(args,vocab,token,n_epochs,n_steps):
+def do_validation(args,vocab,token,n_epochs,n_steps,model):
     losses = []
+    logging.info('run VALIDATION')
     dataset = Dataset(args, vocab, token, isValid=True)
     with torch.no_grad():
         model.eval()
@@ -108,6 +109,8 @@ def do_validation(args,vocab,token,n_epochs,n_steps):
     if len(losses):
         accum_loss = np.mean(losses)
         logging.info('VALIDATION n_epoch={} n_steps={} Loss={:.6f}'.format(n_epochs,n_steps,accum_loss))
+    else:
+        logging.info('no examples found for VALIDATION')
 
 def do_sentence_vectors(args):
     if not os.path.exists(args.name + '.token'):
