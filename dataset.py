@@ -153,7 +153,7 @@ class Dataset():
                 l = l.decode('utf8')
                 idx_ctx = l.rstrip().split('\t')
                 idx = idx_ctx.pop(0)
-                ctx = idx_ctx.split(' ')
+                ctx = idx_ctx[0].split(' ')
                 examples.append(idx.extend(ctx))
 
          ### sort examples by len
