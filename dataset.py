@@ -157,11 +157,11 @@ class Dataset():
                 examples.append(idxs)
 
          ### sort examples by len
-        logging.info('sorting {} examples in shard (by length) to minimize padding'.format(len(examples)))
+        logging.info('found {} examples in shard (shuffling...)'.format(len(examples)))
         length = [len(examples[k]) for k in range(len(examples))] #length of sentences in this shard
         index_examples = np.argsort(np.array(length)) ### These are indexs of examples
 
-        logging.info('building batchs sized of {}'.format(self.args.batch_size))
+        logging.info('building batchs sized of {} examples'.format(self.args.batch_size))
         batchs = []
         batch = []
         for index in index_examples:
@@ -200,7 +200,7 @@ class Dataset():
         ### train ############################################
         ######################################################
         if self.args.mode == 'train':
-            fshards = glob.glob(self.args.name + '.shard_aaaa?.gz')
+            fshards = glob.glob(self.args.name + '.shard_?????.gz')
             random.shuffle(fshards)
             for fshard in fshards:
 

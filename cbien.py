@@ -263,8 +263,6 @@ class Args():
         self.usage = '''usage: {} -name STRING -mode STRING -data_src FILES -data_tgt FILES [Options]
    -name         STRING : experiment name
    -mode         STRING : preprocess, dataset, train, sentence-vectors, word-vectors, word-similarity
-   -data_src      FILES : source file
-   -data_tgt      FILES : target file
 
  Options:
    -seed            INT : seed value                                (12345)
@@ -273,18 +271,22 @@ class Args():
    -cuda                : use CUDA                                  (False)
    -h                   : this help
  -------- When building vocab ------------------------------------------------
+   -data_src      FILES : source file
+   -data_tgt      FILES : target file
    -voc_minf        INT : min frequency to consider a word          (5)
    -voc_maxs        INT : max size of vocabulary (0 for unlimitted) (0)
    -voc_maxn        INT : consider up to this word ngrams           (1)
    -tok_conf       FILE : YAML file with onmt tokenization options  (space)
  -------- When building examples ---------------------------------------------
+   -data_src      FILES : source file
+   -data_tgt      FILES : target file
    -window          INT : window size (use 0 for whole sentence)    (0)
    -pkeep_example FLOAT : probability to keep an example            (1.0)
    -etag         STRING : output examples tag
-Shuffle and split examples into shards: gunzip -c [name].examples.*.gz | shuf | split -a 5 -l 10000000 - [name].shard_ --filter='gzip -c > $FILE.gz'
+Shuffle and split examples into shards: gunzip -c [name].examples.*.gz | shuf | split -a 5 -l 2000000 - [name].shard_ --filter='gzip -c > $FILE.gz'
  -------- When learning ------------------------------------------------------
    -batch_size      INT : batch size used                           (2048)
-   -n_negs          INT : number of negative samples generated      (10)
+   -n_negs          INT : number of negative samples                (10)
    -pooling      STRING : max, avg, sum                             (avg)
    -embedding_size  INT : embedding dimension                       (300)
    -max_epochs      INT : stop learning after this number of epochs (1)
@@ -315,23 +317,21 @@ Shuffle and split examples into shards: gunzip -c [name].examples.*.gz | shuf | 
             elif (tok=="-mode" and len(argv)): self.mode = argv.pop(0)
             elif (tok=="-data_src" and len(argv)): self.data_src = argv.pop(0)
             elif (tok=="-data_tgt" and len(argv)): self.data_tgt = argv.pop(0)
-            elif (tok=="-etag" and len(argv)): self.etag = argv.pop(0)            
-            elif (tok=="-cuda"): self.cuda = True
-            elif (tok=="-seed" and len(argv)): self.seed = int(argv.pop(0))
-            elif (tok=="-log_file" and len(argv)): self.log_file = argv.pop(0)
-            elif (tok=="-log_level" and len(argv)): self.log_level = argv.pop(0)
+            #
             elif (tok=="-voc_minf" and len(argv)): self.voc_minf = int(argv.pop(0))
             elif (tok=="-voc_maxs" and len(argv)): self.voc_maxs = int(argv.pop(0))
             elif (tok=="-voc_maxn" and len(argv)): self.voc_maxn = int(argv.pop(0))
             elif (tok=="-tok_conf" and len(argv)): self.tok_conf = argv.pop(0)
-            elif (tok=="-use_bos_eos"): self.use_bos_eos = True
-#            elif (tok=="-shard_size" and len(argv)): self.shard_size = int(argv.pop(0))
-            elif (tok=="-pkeep_example" and len(argv)): self.pkeep_example = float(argv.pop(0))
-            elif (tok=="-batch_size" and len(argv)): self.batch_size = int(argv.pop(0))
-            elif (tok=="-max_epochs" and len(argv)): self.max_epochs = int(argv.pop(0))
-            elif (tok=="-embedding_size" and len(argv)): self.embedding_size = int(argv.pop(0))
+            #
             elif (tok=="-window" and len(argv)): self.window = int(argv.pop(0))
+            elif (tok=="-pkeep_example" and len(argv)): self.pkeep_example = float(argv.pop(0))
+            elif (tok=="-etag" and len(argv)): self.etag = argv.pop(0)            
+            #
+            elif (tok=="-batch_size" and len(argv)): self.batch_size = int(argv.pop(0))
             elif (tok=="-n_negs" and len(argv)): self.n_negs = int(argv.pop(0))
+            elif (tok=="-pooling" and len(argv)): self.pooling = argv.pop(0)
+            elif (tok=="-embedding_size" and len(argv)): self.embedding_size = int(argv.pop(0))
+            elif (tok=="-max_epochs" and len(argv)): self.max_epochs = int(argv.pop(0))
             elif (tok=="-learning_rate" and len(argv)): self.learning_rate = float(argv.pop(0))
             elif (tok=="-eps" and len(argv)): self.eps = float(argv.pop(0))
             elif (tok=="-beta1" and len(argv)): self.beta1 = float(argv.pop(0))
@@ -339,9 +339,14 @@ Shuffle and split examples into shards: gunzip -c [name].examples.*.gz | shuf | 
             elif (tok=="-keep_last" and len(argv)): self.keep_last_n = int(argv.pop(0))
             elif (tok=="-save_every" and len(argv)): self.save_every_n_steps = int(argv.pop(0))
             elif (tok=="-report_every" and len(argv)): self.report_every_n_steps = int(argv.pop(0))
+            #
+            elif (tok=="-cuda"): self.cuda = True
+            elif (tok=="-seed" and len(argv)): self.seed = int(argv.pop(0))
+            elif (tok=="-log_file" and len(argv)): self.log_file = argv.pop(0)
+            elif (tok=="-log_level" and len(argv)): self.log_level = argv.pop(0)
+            #
             elif (tok=="-k" and len(argv)): self.k = int(argv.pop(0))
             elif (tok=="-sim" and len(argv)): self.sim = argv.pop(0)
-            elif (tok=="-pooling" and len(argv)): self.pooling = argv.pop(0)
             elif (tok=="-h"):
                 sys.stderr.write("{}".format(self.usage))
                 sys.exit()
@@ -411,9 +416,6 @@ if __name__ == "__main__":
 
     elif args.mode == 'word-vectors':
         do_word_vectors(args)
-
-    elif args.mode == 'word-similarity':
-        do_word_similarity(args)
 
     else:
         logging.error('bad -mode option {}'.format(args.mode))
