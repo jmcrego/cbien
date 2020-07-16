@@ -205,7 +205,6 @@ class Dataset():
                 fshards = glob.glob(self.args.name + '.valid_?????.gz')
             else:
                 fshards = glob.glob(self.args.name + '.shard_?????.gz')
-            self.nshards = len(fshards)
 
             random.shuffle(fshards)
             for n,fshard in enumerate(fshards):

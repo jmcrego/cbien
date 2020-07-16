@@ -100,16 +100,14 @@ def do_train(args):
 def do_validation(args,vocab,token,n_epochs,n_steps):
     losses = []
     dataset = Dataset(args, vocab, token, isValid=True)
-    if dataset.nshards == 0:
-        return
-    logging.info('VALIDATION')
     with torch.no_grad():
         model.eval()
         for batch_idx, batch_neg, batch_ctx, batch_msk in dataset:
             loss = model.forward(batch_idx, batch_neg, batch_ctx, batch_msk)
             losses.append(loss.data.cpu().detach().numpy())
-    accum_loss = np.mean(losses)
-    logging.info('VALIDATION n_epoch={} n_steps={} Loss={:.6f}'.format(n_epochs,n_steps,accum_loss))
+    if len(losses):
+        accum_loss = np.mean(losses)
+        logging.info('VALIDATION n_epoch={} n_steps={} Loss={:.6f}'.format(n_epochs,n_steps,accum_loss))
 
 def do_sentence_vectors(args):
     if not os.path.exists(args.name + '.token'):
@@ -331,7 +329,7 @@ class Args():
 Shuffle and split examples into shards: 
   gunzip -c [name].examples.*.gz | shuf | split -a 5 -l 2000000 - [name].shard_ --filter='gzip -c > $FILE.gz'
 To allow validation:
-  afte building shards replace any [name].shard_????? by [name].valid_?????
+  afte building shards replace one/some [name].shard_????? by [name].valid_?????
 
 *** The script needs:
   + pytorch:   conda install pytorch torchvision cudatoolkit=10.1 -c pytorch
