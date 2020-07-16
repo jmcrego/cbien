@@ -151,8 +151,10 @@ class Dataset():
         with gzip.open(fshard,'rb') as f:
             for l in f:
                 l = l.decode('utf8')
-                idx_ctx = l.rstrip().split(' ')
-                examples.append(idx_ctx)
+                idx_ctx = l.rstrip().split('\t')
+                idx = idx_ctx.pop(0)
+                ctx = idx_ctx.split(' ')
+                examples.append(idx.extend(ctx))
 
          ### sort examples by len
         logging.info('sorting {} examples in shard (by length) to minimize padding'.format(len(examples)))
