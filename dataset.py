@@ -153,7 +153,7 @@ class Dataset():
                 l = l.decode('utf8')
                 idx_ctx = l.rstrip().split('\t')
                 idxs = [idx_ctx[0]]
-                idxs.extend(idx_ctx[0].split(' '))
+                idxs.extend(idx_ctx[1].split(' '))
                 examples.append(idxs)
                 if len(examples) == 1:
                     print(examples[0])
