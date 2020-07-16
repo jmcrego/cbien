@@ -102,6 +102,7 @@ def do_validation(args,vocab,token,n_epochs,n_steps):
     dataset = Dataset(args, vocab, token, isValid=True)
     if dataset.nshards == 0:
         return
+    logging.info('VALIDATION')
     with torch.no_grad():
         model.eval()
         for batch_idx, batch_neg, batch_ctx, batch_msk in dataset:
