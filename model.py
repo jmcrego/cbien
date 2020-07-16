@@ -142,25 +142,16 @@ class Word2Vec(nn.Module):
             sys.exit()
         return ngrams_emb
 
-    def forward(self, batch):
-        idx = batch[0] #batch of center (list:bs)
-        neg = batch[1] #batch of context (list:bs of list:nc)
-        ctx = batch[2] #batch of negative (list:bs of list:nn)
-        msk = batch[3] #batch of contex masks (list:bs of list:nc)
+    def forward(self, batch_idx, batch_neg, batch_ctx, batch_msk):
+        idx = torch.as_tensor(batch_idx) #batch of center (list:bs)
+        print(idx[0])
+        neg = torch.as_tensor(batch_neg) #batch of context (list:bs of list:nc)
+        print(neg[0])
+        ctx = torch.as_tensor(batch_ctx) #batch of negative (list:bs of list:nn)
+        print(ctx[0])
+        msk = torch.as_tensor(batch_msk) #batch of contex masks (list:bs of list:nc)
+        print(msk[0])
 
-        idx = torch.as_tensor(idx)
-        print(idx.shape)
-#        neg = torch.as_tensor(neg)
-#        print(neg.shape)
-#        ctx = torch.as_tensor(ctx)
-#        print(ctx.shape)
-#        msk = torch.as_tensor(msk)
-        print(msk.shape)
-
-
-        sys.exit()
-
-        msk = torch.as_tensor(msk) #[bs,n] (positive words are 1.0 others are 0.0)
         if msk.type() != 'torch.BoolTensor':
             logging.error('bad msk type {}'.format(msk.type()))
             sys.exit()
