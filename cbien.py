@@ -92,7 +92,7 @@ def do_train(args):
                 do_validation(args,vocab,token,n_epochs,n_steps,model)
 
         if n_epochs >= args.max_epochs:
-            logging.info('Stop (max epochs reached)')
+            logging.info('Stop ({} epochs reached)'.format(n_epochs))
             break
     save_model(args.name, model, n_steps, args.keep_last_n)
     save_optim(args.name, optimizer)
@@ -112,7 +112,7 @@ def do_validation(args,vocab,token,n_epochs,n_steps,model):
     else:
         logging.info('no examples found for VALIDATION')
 
-def do_sentence_vectors(args):
+def do_vectors(args):
     if not os.path.exists(args.name + '.token'):
         logging.error('missing {} file'.format(args.name + '.token'))
         sys.exit()
@@ -126,8 +126,6 @@ def do_sentence_vectors(args):
     token = OpenNMTTokenizer(args.name + '.token')
     vocab = Vocab()
     vocab.read(args.name + '.vocab')
-    args.voc_maxn = vocab.max_ngram
-    args.use_bos_eos = vocab.use_bos_eos
     model, _ = load_model(args.name, vocab)
     if args.cuda:
         model.cuda()
@@ -144,103 +142,6 @@ def do_sentence_vectors(args):
             for i in range(len(snts)):
                 sentence = ["{:.6f}".format(w) for w in snts[i]]
                 print('{}\t{}'.format(batch[2][i]+1, ' '.join(sentence) ))
-
-
-def do_word_vectors(args):
-    if not os.path.exists(args.name + '.token'):
-        logging.error('missing {} file (run preprocess mode)'.format(args.name + '.token'))
-        sys.exit()
-    if not os.path.exists(args.name + '.vocab'):
-        logging.error('missing {} file (run preprocess mode)'.format(args.name + '.vocab'))
-        sys.exit()
-    if len(glob.glob(args.name + '.model.?????????.pth')) == 0:
-        logging.error('no model available: {}'.format(args.name + '.model.?????????.pth'))
-        sys.exit()
-
-    token = OpenNMTTokenizer(args.name + '.token')
-    vocab = Vocab()
-    vocab.read(args.name + '.vocab')
-    args.voc_maxn = vocab.max_ngram
-    args.use_bos_eos = vocab.use_bos_eos
-    model, _ = load_model(args.name, vocab)
-    if args.cuda:
-        model.cuda()
-
-    dataset = Dataset(args, token, vocab)
-    with torch.no_grad():
-        model.eval()
-        for batch in dataset: ### batch contains ngrams of one entire sentence
-            batch_i = batch[0]
-            batch_e = model.WordEmbed(batch_i, 'iEmb')
-            for i in range(len(batch_e)):
-                wrd_i = batch_i[i]
-                wrd_e = batch_e[i]
-                vector = ["{:.6f}".format(v) for v in wrd_e]
-                wrd = vocab[wrd_i]
-                chk = []
-                if wrd.find(' ') > 0:
-                    wrds_i = map(int, wrd.split(' '))
-                    for wrd_i in wrds_i:
-                        chk.append(vocab[wrd_i])
-                else:
-                    chk.append(wrd)
-
-                print('{}\t{}'.format(' '.join(chk), ' '.join(vector) ))
-            print('')
-
-
-def do_word_similarity(args):
-    if not os.path.exists(args.name + '.token'):
-        logging.error('missing {} file (run preprocess mode)'.format(args.name + '.token'))
-        sys.exit()
-    if not os.path.exists(args.name + '.vocab'):
-        logging.error('missing {} file (run preprocess mode)'.format(args.name + '.vocab'))
-        sys.exit()
-    if len(glob.glob(args.name + '.model.?????????.pth')) == 0:
-        logging.error('no model available: {}'.format(args.name + '.model.?????????.pth'))
-        sys.exit()
-
-    token = OpenNMTTokenizer(args.name + '.token')
-    vocab = Vocab()
-    vocab.read(args.name + '.vocab')
-    args.voc_maxn = vocab.max_ngram
-    args.use_bos_eos = vocab.use_bos_eos    
-    model, _ = load_model(args.name, vocab)
-    if args.cuda:
-        model.cuda()
-
-    if args.sim == 'cos':
-        distance = nn.CosineSimilarity(dim=1, eps=1e-6)
-    elif args.sim == 'pairwise':
-        distance = nn.PairwiseDistance(eps=1e-6)
-    else:
-        logging.error('bad -sim option {}'.format(args.sim))
-        sys.exit()
-
-    dataset = Dataset(args, token, vocab)
-    with torch.no_grad():
-        model.eval()
-        voc_i = [i for i in range(0,len(vocab))]
-        voc_e = model.WordEmbed(voc_i,'iEmb')
-        for batch in dataset:
-            batch_i = batch[0]
-            batch_e = model.WordEmbed(batch_i, 'iEmb')
-            for i in range(len(batch_i)):
-                wrd_i = batch_i[i]
-                wrd_e = batch_e[i]
-                out = []
-                out.append("{}:{}".format(wrd_i,vocab.strngram(wrd_i)))
-                dist_wrd_voc = distance(wrd_e.unsqueeze(0),voc_e) ### distance between this word_e to all words in voc
-                mininds = torch.argsort(dist_wrd_voc,dim=0,descending=True)
-                for k in range(1,len(mininds)):
-                    ind = mininds[k].item() #cpu().detach().numpy()
-                    if i != ind:
-                        dist = dist_wrd_voc[ind].item()
-                        out.append("{:.6f}:{}:{}".format(dist,ind,vocab.strngram(ind)))
-                        if len(out)-1 == args.k:
-                            break
-                print('\t'.join(out))
-        print('')
 
 
 ################################################################
@@ -263,7 +164,6 @@ class Args():
         self.voc_maxn = 1
         self.tok_conf = None
         self.train = None
-#        self.shard_size = 1000
         self.pkeep = 1.0
         self.pooling = 'avg'
         self.batch_size = 2048
@@ -403,7 +303,7 @@ To allow validation:
             logging.error('missing -mode option')
             sys.exit()
 
-        if (self.mode == 'preprocess'  or self.mode == 'examples') and (self.data_src is None or self.data_tgt is None):
+        if (self.mode == 'preprocess'  or self.mode == 'examples') and (self.data_src is None and self.data_tgt is None):
             logging.error('missing -data_src OR -data_tgt option')
             sys.exit()
 
@@ -446,11 +346,8 @@ if __name__ == "__main__":
     elif args.mode == 'train':
         do_train(args)
 
-    elif args.mode == 'sentence-vectors':
-        do_sentence_vectors(args)
-
-    elif args.mode == 'word-vectors':
-        do_word_vectors(args)
+    elif args.mode == 'sentence-vectors' or args.mode == 'word-vectors':
+        do_vectors(args)
 
     else:
         logging.error('bad -mode option {}'.format(args.mode))

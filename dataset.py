@@ -42,11 +42,12 @@ class Examples():
 
 class Dataset():
 
-    def __init__(self, args, vocab, token, isValid=False):
+    def __init__(self, args, vocab, token, isValid=False, isTest=False):
         self.args = args
         self.vocab = vocab
         self.token = token
         self.isValid = isValid
+        self.isTest = isTest
 
     def examples(self):
         self.stats_ngrams = defaultdict(int)
@@ -60,6 +61,7 @@ class Dataset():
         file_pair = Inputter(self.args.data_src,self.args.data_tgt,self.token,self.vocab.max_ngram, self.vocab.str_sep, self.vocab.str_bos, self.vocab.str_eos, self.vocab.tag_src, self.vocab.tag_tgt)
         for sentence_tok in file_pair:
             nsent += 1
+            #print(nsent,sentence_tok)
 
             sentence_idx = []
             to_predict = []
@@ -86,7 +88,10 @@ class Dataset():
                         nunk_tgt += 1
                         n_tgt += 1
 
-            if n_src == 0 or n_tgt == 0:
+            #print(n_src,n_tgt)
+            if self.args.data_src is not None and n_src == 0:
+                continue
+            if self.args.data_tgt is not None and n_tgt == 0:
                 continue
 
             stats_n_src += n_src
@@ -100,9 +105,18 @@ class Dataset():
                 if len(ctx) == 0:
                     continue
                 e.write(sentence_idx[c], ctx) #, self.args.etag+':nsent='+str(nsent)+':c='+str(c)+':tok='+sentence_tok[c]+':idx='+str(sentence_idx[c]))
+
             if nsent % 10000 == 0:
-                logging.info('{} sentences => {} examples {}/{} tokens {:.2f}/{:.2f} %OOV'.format(nsent, len(e), stats_n_src,stats_n_tgt,100.0*stats_nunk_src/stats_n_src,100.0*stats_nunk_tgt/stats_n_tgt))
-        logging.info('read {} sentences => {} examples {}/{} tokens {:.2f}/{:.2f} %OOV'.format(nsent, len(e), stats_n_src,stats_n_tgt,100.0*stats_nunk_src/stats_n_src,100.0*stats_nunk_tgt/stats_n_tgt))
+                if self.args.data_src is not None:
+                    logging.info('{} sentences => {} examples {} src tokens {:.2f} %OOV'.format(nsent, len(e),stats_n_src,100.0*stats_nunk_src/stats_n_src))
+                if self.args.data_tgt is not None:
+                    logging.info('{} sentences => {} examples {} tgt tokens {:.2f} %OOV'.format(nsent, len(e),stats_n_tgt,100.0*stats_nunk_tgt/stats_n_tgt))
+
+        if self.args.data_src is not None:
+            logging.info('total {} sentences => {} examples {} src tokens {:.2f} %OOV'.format(nsent, len(e),stats_n_src,100.0*stats_nunk_src/stats_n_src))
+        if self.args.data_tgt is not None:
+            logging.info('total {} sentences => {} examples {} tgt tokens {:.2f} %OOV'.format(nsent, len(e),stats_n_tgt,100.0*stats_nunk_tgt/stats_n_tgt))
+
         for n,N in sorted(self.stats_ngrams.items(), key=lambda item: item[0], reverse=False): 
             logging.info('{}-grams: {}'.format(n,N))
 

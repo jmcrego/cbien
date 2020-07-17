@@ -38,54 +38,71 @@ class Inputter():
         return ngrams
 
     def __iter__(self):
-        fs, is_gzip_src = open_read(self.fsrc)
-        ft, is_gzip_tgt = open_read(self.ftgt)
-        for ls,lt in zip(fs,ft):
+        if self.fsrc is not None:
+            fs, is_gzip_src = open_read(self.fsrc)
+        if self.ftgt is not None:
+            ft, is_gzip_tgt = open_read(self.ftgt)
+
+        while True:
             self.stats_nsent += 1
-            if is_gzip_src:
-                ls = ls.decode('utf8')
-            if is_gzip_tgt:
-                lt = lt.decode('utf8')
-            ls = ls.strip(" \n")
-            lt = lt.strip(" \n")
+            SRC = []
+            TGT = []
 
-            SRC = self.token.tokenize(ls)
-            TGT = self.token.tokenize(lt)
+            if self.fsrc is not None:
+                ls = fs.readline()
+                if not ls:
+                    break
+                if is_gzip_src:
+                    ls = ls.decode('utf8')
+                ls = ls.strip(" \n")
+                SRC = self.token.tokenize(ls)
+                if len(SRC) == 0 or SRC[0] == '':
+                    logging.debug('skip src empty sentence: <{}> {}:{}'.format(ls,self.fsrc,self.stats_nsent))
+                    self.stats_nskip += 1
+                    continue
 
-            if len(SRC) == 0 or SRC[0] == '':
-                logging.debug('skip src empty sentence: <{}> {}:{}'.format(ls,self.fsrc,self.stats_nsent))
-                self.stats_nskip += 1
-                continue
-
-            if len(TGT) == 0 or TGT[0] == '':
-                logging.debug('skip tgt empty sentence: <{}> {}:{}'.format(lt,self.ftgt,self.stats_nsent))
-                self.stats_nskip += 1
-                tgt_ok = False
-                continue
+            if self.ftgt is not None:
+                lt = ft.readline()
+                if not lt:
+                    break
+                if is_gzip_tgt:
+                    lt = lt.decode('utf8')
+                lt = lt.strip(" \n")
+                TGT = self.token.tokenize(lt)
+                if len(TGT) == 0 or TGT[0] == '':
+                    logging.debug('skip tgt empty sentence: <{}> {}:{}'.format(lt,self.ftgt,self.stats_nsent))
+                    self.stats_nskip += 1
+                    tgt_ok = False
+                    continue
 
             self.stats_ntokens += len(SRC) + len(TGT)
 
             ###
             ### build sentence pair
             ###
-
             toks = []
+
+            ### SRC
             toks.append(self.str_bos)
             for tok in SRC:
                 toks.append(self.tag_src+tok)
             toks.append(self.str_eos)
+
             toks.append(self.str_sep)
+
+            ### TGT
             toks.append(self.str_bos)
             for tok in TGT:
                 toks.append(self.tag_tgt+tok)
             toks.append(self.str_eos)
 
-
             yield toks
 
         logging.info('filtered {} out of {} sentences (found {} tokens) in {},{}'.format(self.stats_nskip,self.stats_nsent,self.stats_ntokens,self.fsrc,self.ftgt))
-        fs.close()
-        ft.close()
+        if self.fsrc is not None:
+            fs.close()
+        if self.ftgt is not None:
+            ft.close()
 
 
 
