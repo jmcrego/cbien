@@ -23,6 +23,11 @@ class Inputter():
         self.stats_ntokens = 0
         self.stats_nskip = 0
 
+        if self.fsrc is None:
+            logging.info('empty src file')
+        if self.ftgt is None:
+            logging.info('empty tgt file')
+
 
     def ngrams(self,toks):
         #returns the list of all ngrams in toks that do not contain <sep>
@@ -45,9 +50,8 @@ class Inputter():
 
         while True:
             self.stats_nsent += 1
-            SRC = []
-            TGT = []
 
+            SRC = []
             if self.fsrc is not None:
                 ls = fs.readline()
                 if not ls:
@@ -61,6 +65,7 @@ class Inputter():
                     self.stats_nskip += 1
                     continue
 
+            TGT = []
             if self.ftgt is not None:
                 lt = ft.readline()
                 if not lt:
@@ -88,6 +93,7 @@ class Inputter():
                 toks.append(self.tag_src+tok)
             toks.append(self.str_eos)
 
+            ### SEP
             toks.append(self.str_sep)
 
             ### TGT

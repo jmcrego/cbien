@@ -78,10 +78,11 @@ class Vocab():
         self.max_ngram = max_ngram
 
         file_pair = Inputter(file_src,file_tgt,token,self.max_ngram, self.str_sep, self.str_bos, self.str_eos, self.tag_src, self.tag_tgt)
-        for src_tgt_sentence_tok in file_pair:
+        for join_sentence_tok in file_pair:
+
             self.n_sents += 1
             ngram_seen = [] #to count only once each distinct token in the sentence
-            for ngram in file_pair.ngrams(src_tgt_sentence_tok): #returns the list of all ngrams in toks that do not contain <sep>
+            for ngram in file_pair.ngrams(join_sentence_tok): #returns the list of all ngrams in toks that do not contain <sep>
                 if ngram not in ngram_seen:
                     self.ngram_to_frq[ngram] += 1
                     ngram_seen.append(ngram)
@@ -107,15 +108,21 @@ class Vocab():
                 break
             if ngram in self.tok_to_idx:
                 continue
+            if self.tag_src not in ngram and self.tag_tgt not in ngram: ### must contain valid tokens
+                continue
+
             self.tok_to_idx[ngram] = len(self.idx_to_tok)
             self.idx_to_tok.append(ngram)
+
             ### stats
             stats_ngrams += 1
             n = len(ngram.split(' '))
-            if ngram.find(self.tag_src):
+            if self.tag_src in ngram:
                 stats_src[n] += 1
-            else:
+            elif self.tag_tgt in ngram:
                 stats_tgt[n] += 1
+            else:
+                print(ngram)
 
         logging.info('built vocab ({} entries)'.format(len(self.idx_to_tok)))
         for n,N in sorted(stats_src.items(), key=lambda item: item[0], reverse=False): 

@@ -42,12 +42,75 @@ class Examples():
 
 class Dataset():
 
-    def __init__(self, args, vocab, token, isValid=False, isTest=False):
+    def __init__(self, args, vocab, token, isValid=False):
         self.args = args
         self.vocab = vocab
         self.token = token
         self.isValid = isValid
         self.isTest = isTest
+
+    def examples_inference(self):
+        self.stats_ngrams = defaultdict(int)
+        e = Examples()
+        e.open_write(self.args.name + '.examples.' + self.args.etag)
+        stats_n_src = 0
+        stats_n_tgt = 0
+        stats_nunk_src = 0
+        stats_nunk_tgt = 0
+        nsent = 0
+        file_pair = Inputter(self.args.data_src,self.args.data_tgt,self.token,self.vocab.max_ngram, self.vocab.str_sep, self.vocab.str_bos, self.vocab.str_eos, self.vocab.tag_src, self.vocab.tag_tgt)
+        for sentence_tok in file_pair:
+            nsent += 1
+            #print(nsent,sentence_tok)
+
+            sentence_idx = []
+            to_predict = []
+            is_src = True
+            n_src = 0
+            n_tgt = 0
+            nunk_src = 0
+            nunk_tgt = 0
+            for i in range(len(sentence_tok)):
+                sentence_idx.append(self.vocab[sentence_tok[i]])
+                if sentence_idx[-1] == self.vocab.idx_sep:
+                    is_src = False
+                if sentence_idx[-1] > 4: # 0:<pad>, 1:<unk>, 2:<bos>, 3:<eos>, 4:<sep> not considered to be predicted
+                    to_predict.append(i)
+                    if is_src:
+                        n_src += 1
+                    else:
+                        n_tgt += 1
+                elif sentence_idx[-1] == self.vocab.idx_unk:
+                    if is_src:
+                        nunk_src += 1
+                        n_src += 1
+                    else:
+                        nunk_tgt += 1
+                        n_tgt += 1
+
+            #print(n_src,n_tgt)
+            if self.args.data_src is not None and n_src == 0:
+                continue
+            if self.args.data_tgt is not None and n_tgt == 0:
+                continue
+
+            stats_n_src += n_src
+            stats_n_tgt += n_tgt
+            stats_nunk_src += nunk_src
+            stats_nunk_tgt += nunk_tgt
+            ctx = self.get_ctx(sentence_tok, -1) #[idx, idx, ...]
+            e.write(-1, ctx) #, self.args.etag+':nsent='+str(nsent)+':c='+str(c)+':tok='+sentence_tok[c]+':idx='+str(sentence_idx[c]))
+
+        e.close()
+
+        if self.args.data_src is not None:
+            logging.info('total {} sentences => {} examples {} src tokens {:.2f} %OOV'.format(nsent, len(e),stats_n_src,100.0*stats_nunk_src/stats_n_src))
+        if self.args.data_tgt is not None:
+            logging.info('total {} sentences => {} examples {} tgt tokens {:.2f} %OOV'.format(nsent, len(e),stats_n_tgt,100.0*stats_nunk_tgt/stats_n_tgt))
+
+        for n,N in sorted(self.stats_ngrams.items(), key=lambda item: item[0], reverse=False): 
+            logging.info('{}-grams: {}'.format(n,N))
+
 
     def examples(self):
         self.stats_ngrams = defaultdict(int)
@@ -112,6 +175,8 @@ class Dataset():
                 if self.args.data_tgt is not None:
                     logging.info('{} sentences => {} examples {} tgt tokens {:.2f} %OOV'.format(nsent, len(e),stats_n_tgt,100.0*stats_nunk_tgt/stats_n_tgt))
 
+        e.close()
+
         if self.args.data_src is not None:
             logging.info('total {} sentences => {} examples {} src tokens {:.2f} %OOV'.format(nsent, len(e),stats_n_src,100.0*stats_nunk_src/stats_n_src))
         if self.args.data_tgt is not None:
@@ -120,7 +185,6 @@ class Dataset():
         for n,N in sorted(self.stats_ngrams.items(), key=lambda item: item[0], reverse=False): 
             logging.info('{}-grams: {}'.format(n,N))
 
-        e.close()
 
     def get_neg(self, idxs):
         neg = []
@@ -132,10 +196,10 @@ class Dataset():
         return neg
 
     def get_ctx(self, toks, c):
-        if self.args.window > 0:
+        if self.args.window > 0 and c >= 0:
             beg = max(c - self.args.window, 0)
             end = min(c + self.args.window + 1, len(toks))
-        else:
+        else: #context is all sentence if window==0 or inference (c==-1)
             beg = 0
             end = len(toks)
 

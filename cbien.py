@@ -112,7 +112,7 @@ def do_validation(args,vocab,token,n_epochs,n_steps,model):
     else:
         logging.info('no examples found for VALIDATION')
 
-def do_vectors(args):
+def do_sentence_vectors(args):
     if not os.path.exists(args.name + '.token'):
         logging.error('missing {} file'.format(args.name + '.token'))
         sys.exit()
@@ -131,6 +131,7 @@ def do_vectors(args):
         model.cuda()
 
     dataset = Dataset(args, token, vocab)
+    dataset.examples_inference()
     with torch.no_grad():
         model.eval()
         for batch in dataset:
@@ -346,8 +347,8 @@ if __name__ == "__main__":
     elif args.mode == 'train':
         do_train(args)
 
-    elif args.mode == 'sentence-vectors' or args.mode == 'word-vectors':
-        do_vectors(args)
+    elif args.mode == 'sentence-vectors':
+        do_sentence_vectors(args)
 
     else:
         logging.error('bad -mode option {}'.format(args.mode))
