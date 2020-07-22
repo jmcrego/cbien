@@ -18,6 +18,7 @@ from vocab import Vocab
 from tokenizer import OpenNMTTokenizer
 from model import Word2Vec, load_model, load_build_optim, save_model, save_optim
 from utils import create_logger
+from inputter import Inputter
 
 def do_preprocess(args):
     ###
@@ -126,23 +127,61 @@ def do_sentence_vectors(args):
     token = OpenNMTTokenizer(args.name + '.token')
     vocab = Vocab()
     vocab.read(args.name + '.vocab')
+    dataset = Dataset(args, vocab, token)
     model, _ = load_model(args.name, vocab)
     if args.cuda:
         model.cuda()
 
-    dataset = Dataset(args, token, vocab)
-    dataset.examples_inference()
     with torch.no_grad():
         model.eval()
-        for batch in dataset:
-            #[batch_snt, batch_msk, batch_ind]
-            msk = torch.as_tensor(batch[1]) #[bs,n] (positive words are 1.0 others are 0.0)
+        batch_snt = []
+        batch_msk = []
+        nsent = 0
+        file_pair = Inputter(args.data_src,args.data_tgt,token,vocab.max_ngram, vocab.str_sep, vocab.str_bos, vocab.str_eos, vocab.tag_src, vocab.tag_tgt, do_filter=False)
+        for toks in file_pair:
+            nsent += 1
+            snt = dataset.get_ctx(toks, -1)
+            #print(snt)
+            msk = [True] * len(snt)
+            batch_snt.append(snt)
+            batch_msk.append(msk)
+
+            if len(batch_snt) == args.batch_size:
+                ### add pad
+                max_snt_len = max([len(snt) for snt in batch_snt])
+                for k in range(len(batch_snt)):
+                    snt_len = len(batch_snt[k])
+                    addn = max_snt_len - snt_len
+                    batch_snt[k] += [vocab.idx_pad] * addn
+                    batch_msk[k] += [False] * addn
+                ### embedding
+                msk = torch.as_tensor(batch_msk) #[bs,n] (positive words are 1.0 others are 0.0)
+                if args.cuda:
+                    msk = msk.cuda()            
+                snts = model.NgramsEmbed(batch_snt, msk).cpu().detach().numpy().tolist()
+                for i in range(len(snts)):
+                    sentence = ["{:.6f}".format(w) for w in snts[i]]
+                    print('{}'.format(' '.join(sentence) ))
+                ### initialize batch
+                batch_snt = []
+                batch_msk = []
+
+        if len(batch_snt):
+            ### add pad
+            max_snt_len = max([len(snt) for snt in batch_snt])
+            for k in range(len(batch_snt)):
+                snt_len = len(batch_snt[k])
+                addn = max_snt_len - snt_len
+                batch_snt[k] += [vocab.idx_pad] * addn
+                batch_msk[k] += [False] * addn
+            ### embedding
+            msk = torch.as_tensor(batch_msk) #[bs,n] (positive words are 1.0 others are 0.0)
             if args.cuda:
                 msk = msk.cuda()            
-            snts = model.NgramsEmbed(batch[0], msk).cpu().detach().numpy().tolist()
+            snts = model.NgramsEmbed(batch_snt, msk).cpu().detach().numpy().tolist()
             for i in range(len(snts)):
                 sentence = ["{:.6f}".format(w) for w in snts[i]]
-                print('{}\t{}'.format(batch[2][i]+1, ' '.join(sentence) ))
+                print('{}'.format(' '.join(sentence) ))
 
 
 ################################################################
@@ -209,6 +248,9 @@ class Args():
    -pkeep         FLOAT : probability to keep an example            (1.0)
    -etag         STRING : output examples tag
 
+Shuffle and split examples into shards: 
+  gunzip -c [name].examples.*.gz | shuf | split -a 5 -l 2000000 - [name].shard_ --filter='gzip -c > $FILE.gz'
+
  -------- When learning (mode train) -----------------------------------------
    -batch_size      INT : batch size used                           (2048)
    -n_negs          INT : number of negative samples                (10)
@@ -227,11 +269,12 @@ class Args():
    -report_every    INT : print report every n learning steps       (500)
 
  -------- When inference (mode sentence-vectors or word-vectors) -------------
+   -data_src      FILES : source file
+   -data_tgt      FILES : target file
+   -batch_size      INT : batch size used                           (2048)
    -k               INT : find k closest words to each file ngram   (5)
    -sim          STRING : cos, pairwise                             (cos)
 
-Shuffle and split examples into shards: 
-  gunzip -c [name].examples.*.gz | shuf | split -a 5 -l 2000000 - [name].shard_ --filter='gzip -c > $FILE.gz'
 To allow validation:
   after building shards replace one/some [name].shard_????? by [name].valid_?????
 

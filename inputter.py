@@ -8,7 +8,7 @@ from utils import open_read
 
 class Inputter():
 
-    def __init__(self, fsrc, ftgt, token, max_ngram, str_sep, str_bos, str_eos, tag_src, tag_tgt):
+    def __init__(self, fsrc, ftgt, token, max_ngram, str_sep, str_bos, str_eos, tag_src, tag_tgt, do_filter=True):
         self.fsrc = fsrc
         self.ftgt = ftgt
         self.token = token
@@ -18,6 +18,7 @@ class Inputter():
         self.str_eos = str_eos
         self.tag_src = tag_src
         self.tag_tgt = tag_tgt
+        self.do_filter = do_filter
 
         self.stats_nsent = 0
         self.stats_ntokens = 0
@@ -49,7 +50,6 @@ class Inputter():
             ft, is_gzip_tgt = open_read(self.ftgt)
 
         while True:
-            self.stats_nsent += 1
 
             SRC = []
             if self.fsrc is not None:
@@ -60,8 +60,8 @@ class Inputter():
                     ls = ls.decode('utf8')
                 ls = ls.strip(" \n")
                 SRC = self.token.tokenize(ls)
-                if len(SRC) == 0 or SRC[0] == '':
-                    logging.debug('skip src empty sentence: <{}> {}:{}'.format(ls,self.fsrc,self.stats_nsent))
+                if self.do_filter and (len(SRC) == 0 or SRC[0] == ''):
+                    logging.debug('skip src empty sentence: <{}> {}:{}'.format(ls,self.fsrc,self.stats_nsent+1))
                     self.stats_nskip += 1
                     continue
 
@@ -74,12 +74,13 @@ class Inputter():
                     lt = lt.decode('utf8')
                 lt = lt.strip(" \n")
                 TGT = self.token.tokenize(lt)
-                if len(TGT) == 0 or TGT[0] == '':
-                    logging.debug('skip tgt empty sentence: <{}> {}:{}'.format(lt,self.ftgt,self.stats_nsent))
+                if self.do_filter and (len(TGT) == 0 or TGT[0] == ''):
+                    logging.debug('skip tgt empty sentence: <{}> {}:{}'.format(lt,self.ftgt,self.stats_nsent+1))
                     self.stats_nskip += 1
                     tgt_ok = False
                     continue
 
+            self.stats_nsent += 1
             self.stats_ntokens += len(SRC) + len(TGT)
 
             ###
