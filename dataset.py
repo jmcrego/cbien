@@ -169,10 +169,16 @@ class Dataset():
         ### read examples
         logging.info('reading examples in shard {}/{} {}'.format(n,N,fshard))
         examples = []
-        with gzip.open(fshard,'rb') as f:
-            for l in f:
-                l = l.decode('utf8')
-                examples.append(l.rstrip().split(' '))
+        if fshard.endswith('.gz'):
+            with gzip.open(fshard,'rb') as f:
+                for l in f:
+                    l = l.decode('utf8')
+                    examples.append(l.rstrip().split(' '))
+        else:
+            with open(file, mode='r', encoding='utf-8') as f:
+                for l in f:
+                    l = l.decode('utf8')
+                    examples.append(l.rstrip().split(' '))
 
          ### sort examples by len
         logging.info('found {} examples in shard (shuffling...)'.format(len(examples)))
@@ -220,6 +226,8 @@ class Dataset():
         if self.args.mode == 'train':
             if self.isValid:
                 fshards = glob.glob(self.args.name + '.valid_?????.gz')
+                if len(fshards) == 0:
+                    fshards = glob.glob(self.args.name + '.valid_?????')
             else:
                 fshards = glob.glob(self.args.name + '.shard_?????.gz')
                 #print(fshards)

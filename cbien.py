@@ -90,7 +90,18 @@ def do_train(args):
                 save_optim(args.name, optimizer)
 
             if n_steps % args.valid_every_n_steps == 0:
-                do_validation(args,vocab,token,n_epochs,n_steps,model)
+                logging.info('run VALIDATION')
+                valid_dataset = Dataset(args, vocab, token, isValid=True)
+                valid_losses = []
+                with torch.no_grad():
+                    model.eval()
+                    for batch_idx, batch_neg, batch_ctx, batch_msk in valid_dataset:
+                        loss = model.forward(batch_idx, batch_neg, batch_ctx, batch_msk)
+                        valid_losses.append(loss.data.cpu().detach().numpy())
+                if len(vlosses):
+                    logging.info('VALIDATION n_epoch={} n_steps={} Loss={:.6f}'.format(n_epochs,n_steps,np.mean(valid_losses)))
+                else:
+                    logging.info('VALIDATION no examples found!')
 
         if n_epochs >= args.max_epochs:
             logging.info('Stop ({} epochs reached)'.format(n_epochs))
@@ -98,20 +109,6 @@ def do_train(args):
     save_model(args.name, model, n_steps, args.keep_last_n)
     save_optim(args.name, optimizer)
 
-def do_validation(args,vocab,token,n_epochs,n_steps,model):
-    losses = []
-    logging.info('run VALIDATION')
-    dataset = Dataset(args, vocab, token, isValid=True)
-    with torch.no_grad():
-        model.eval()
-        for batch_idx, batch_neg, batch_ctx, batch_msk in dataset:
-            loss = model.forward(batch_idx, batch_neg, batch_ctx, batch_msk)
-            losses.append(loss.data.cpu().detach().numpy())
-    if len(losses):
-        accum_loss = np.mean(losses)
-        logging.info('VALIDATION n_epoch={} n_steps={} Loss={:.6f}'.format(n_epochs,n_steps,accum_loss))
-    else:
-        logging.info('no examples found for VALIDATION')
 
 def do_sentence_vectors(args):
     if not os.path.exists(args.name + '.token'):
@@ -249,7 +246,12 @@ class Args():
    -etag         STRING : output examples tag
 
 Shuffle and split examples into shards: 
-  gunzip -c [name].examples.*.gz | shuf | split -a 5 -l 2000000 - [name].shard_ --filter='gzip -c > $FILE.gz'
+  l=2500000
+  gunzip -c [name].examples.*.gz | shuf | split -a 5 -l $l - [name].shard_ --filter='gzip -c > $FILE.gz'
+Shuffle and split examples into shards and validation set:
+  n=10000
+  l=2500000
+  gunzip -c [name].examples.*.gz | shuf | awk -v name=$name '{ print > ((NR <= $n) ? name".valid_00000" : "-"); }' | split -a 5 -l $l - $name.shard_ --filter='gzip -c > $FILE.gz'
 
  -------- When learning (mode train) -----------------------------------------
    -batch_size      INT : batch size used                           (2048)
@@ -275,8 +277,7 @@ Shuffle and split examples into shards:
    -k               INT : find k closest words to each file ngram   (5)
    -sim          STRING : cos, pairwise                             (cos)
 
-To allow validation:
-  after building shards replace one/some [name].shard_????? by [name].valid_?????
+To allow validation use: [name].valid_?????
 
 *** The script needs:
   + pytorch:   conda install pytorch torchvision cudatoolkit=10.1 -c pytorch
