@@ -248,10 +248,7 @@ class Args():
 Shuffle and split examples into shards: 
   l=2500000
   gunzip -c [name].examples.*.gz | shuf | split -a 5 -l $l - [name].shard_ --filter='gzip -c > $FILE.gz'
-Shuffle and split examples into shards and validation set:
-  n=10000
-  l=2500000
-  gunzip -c [name].examples.*.gz | shuf | awk -v name=$name '{ print > ((NR <= $n) ? name".valid_00000" : "-"); }' | split -a 5 -l $l - $name.shard_ --filter='gzip -c > $FILE.gz'
+To allow validation use: [name].valid_?????
 
  -------- When learning (mode train) -----------------------------------------
    -batch_size      INT : batch size used                           (2048)
@@ -276,8 +273,6 @@ Shuffle and split examples into shards and validation set:
    -batch_size      INT : batch size used                           (2048)
    -k               INT : find k closest words to each file ngram   (5)
    -sim          STRING : cos, pairwise                             (cos)
-
-To allow validation use: [name].valid_?????
 
 *** The script needs:
   + pytorch:   conda install pytorch torchvision cudatoolkit=10.1 -c pytorch
