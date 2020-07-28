@@ -90,7 +90,7 @@ def do_train(args):
                 save_optim(args.name, optimizer)
 
             if n_steps % args.valid_every_n_steps == 0:
-                self.do_valid(args,token,vocab,model,n_steps)
+                do_validation(args,token,vocab,model,n_steps)
 
         if n_epochs >= args.max_epochs:
             logging.info('Stop ({} epochs reached)'.format(n_epochs))
@@ -99,7 +99,7 @@ def do_train(args):
     save_optim(args.name, optimizer)
 
 
-def do_valid(args,token,vocab,model,n_steps):
+def do_validation(args,token,vocab,model,n_steps):
     logging.info('run VALIDATION')
     valid_dataset = Dataset(args, vocab, token, isValid=True)
     valid_losses = []
