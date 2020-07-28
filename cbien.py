@@ -90,24 +90,30 @@ def do_train(args):
                 save_optim(args.name, optimizer)
 
             if n_steps % args.valid_every_n_steps == 0:
-                logging.info('run VALIDATION')
-                valid_dataset = Dataset(args, vocab, token, isValid=True)
-                valid_losses = []
-                with torch.no_grad():
-                    model.eval()
-                    for batch_idx, batch_neg, batch_ctx, batch_msk in valid_dataset:
-                        loss = model.forward(batch_idx, batch_neg, batch_ctx, batch_msk)
-                        valid_losses.append(loss.data.cpu().detach().numpy())
-                if len(vlosses):
-                    logging.info('VALIDATION n_epoch={} n_steps={} Loss={:.6f}'.format(n_epochs,n_steps,np.mean(valid_losses)))
-                else:
-                    logging.info('VALIDATION no examples found!')
+                self.do_valid(args,token,vocab,model,n_steps)
 
         if n_epochs >= args.max_epochs:
             logging.info('Stop ({} epochs reached)'.format(n_epochs))
             break
     save_model(args.name, model, n_steps, args.keep_last_n)
     save_optim(args.name, optimizer)
+
+
+def do_valid(args,token,vocab,model,n_steps):
+    logging.info('run VALIDATION')
+    valid_dataset = Dataset(args, vocab, token, isValid=True)
+    valid_losses = []
+    with torch.no_grad():
+        model.eval()
+        for batch_idx, batch_neg, batch_ctx, batch_msk in valid_dataset:
+            loss = model.forward(batch_idx, batch_neg, batch_ctx, batch_msk)
+            valid_losses.append(loss.data.cpu().detach().numpy())
+    if len(valid_losses):
+        logging.info('VALIDATION n_steps={} Loss={:.6f}'.format(n_steps,np.mean(valid_losses)))
+    else:
+        logging.info('VALIDATION no examples found!')
+
+
 
 
 def do_sentence_vectors(args):
@@ -248,7 +254,7 @@ class Args():
 Shuffle and split examples into shards: 
   l=2500000
   gunzip -c [name].examples.*.gz | shuf | split -a 5 -l $l - [name].shard_ --filter='gzip -c > $FILE.gz'
-To allow validation use: [name].valid_?????
+To allow validation use: [name].valid_?????.gz
 
  -------- When learning (mode train) -----------------------------------------
    -batch_size      INT : batch size used                           (2048)
