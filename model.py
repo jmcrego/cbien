@@ -154,6 +154,7 @@ class Word2Vec(nn.Module):
         msk = torch.as_tensor(batch_msk) #batch of contex masks (list:bs of list:nc)
         assert BS == msk.size()[0] 
         assert NC == msk.size()[1] 
+        logging.info('BS={}, NN={}, NC={}'.format(BS,NN,NC))
 
         if msk.type() != 'torch.BoolTensor':
             logging.error('bad msk type {}'.format(msk.type()))
@@ -194,6 +195,7 @@ class Word2Vec(nn.Module):
         ###
         #i use clamp to prevent NaN/Inf appear when computing the log of 1.0/0.0
         err = torch.bmm(ctx_emb.unsqueeze(1), wrd_emb.unsqueeze(-1)).squeeze().sigmoid().clamp(min_sigmoid, max_sigmoid).log().neg() #[bs,1,ds] x [bs,ds,1] = [bs,1] = > [bs]
+        logging.info('err.size={}'.format(err.size()))
         assert BS == err.size()
         if torch.isnan(err).any() or torch.isinf(err).any():
             logging.error('NaN/Inf detected in positive words err={}'.format(err))
