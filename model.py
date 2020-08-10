@@ -195,14 +195,18 @@ class Word2Vec(nn.Module):
         ###
         #i use clamp to prevent NaN/Inf appear when computing the log of 1.0/0.0
         ctx_emb_2 = ctx_emb.unsqueeze(1)  #[bs,1,ds]
+        logging.info('ctx_emb_2.size={}'.format(ctx_emb_2.size()))
         assert BS == ctx_emb_2.size()[0]
         assert DS == ctx_emb_2.size()[2]
         wrd_emb_2 = wrd_emb.unsqueeze(-1) #[bs,ds,1]
+        logging.info('wrd_emb_2.size={}'.format(wrd_emb_2.size()))
         assert BS == wrd_emb_2.size()[0]
         assert DS == wrd_emb_2.size()[1]
         bmm = torch.bmm(ctx_emb_2, wrd_emb_2) #[bs,1,1]
+        logging.info('bmm.size={}'.format(bmm.size()))
         assert BS == bmm.size()[0]
         bmm_2 = bmm.squeeze() #[bs]
+        logging.info('bmm_2.size={}'.format(bmm_2.size()))
         assert BS == bmm_2.size()[0]
         err = bmm_2.sigmoid().clamp(min_sigmoid, max_sigmoid).log().neg() #[bs]
 #        err = torch.bmm(ctx_emb.unsqueeze(1), wrd_emb.unsqueeze(-1)).squeeze().sigmoid().clamp(min_sigmoid, max_sigmoid).log().neg() #[bs,1,ds] x [bs,ds,1] = [bs,1,1] => [bs]
