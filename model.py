@@ -194,8 +194,19 @@ class Word2Vec(nn.Module):
         ### Computing positive words loss
         ###
         #i use clamp to prevent NaN/Inf appear when computing the log of 1.0/0.0
-        err = torch.bmm(ctx_emb.unsqueeze(1), wrd_emb.unsqueeze(-1)).squeeze().sigmoid().clamp(min_sigmoid, max_sigmoid).log().neg() #[bs,1,ds] x [bs,ds,1] = [bs,1] = > [bs]
-        logging.info('err.size={} BS={}'.format(err.size(),BS))
+        ctx_emb_2 = ctx_emb.unsqueeze(1)  #[bs,1,ds]
+        assert BS == ctx_emb_2.size()[0]
+        assert DS == ctx_emb_2.size()[2]
+        wrd_emb_2 = wrd_emb.unsqueeze(-1) #[bs,ds,1]
+        assert BS == wrd_emb_2.size()[0]
+        assert DS == wrd_emb_2.size()[1]
+        bmm = torch.bmm(ctx_emb_2, wrd_emb_2) #[bs,1,1]
+        assert BS == bmm.size()[0]
+        bmm_2 = bmm.squeeze() #[bs]
+        assert BS == bmm_2.size()[0]
+        err = bmm_2.sigmoid().clamp(min_sigmoid, max_sigmoid).log().neg() #[bs]
+#        err = torch.bmm(ctx_emb.unsqueeze(1), wrd_emb.unsqueeze(-1)).squeeze().sigmoid().clamp(min_sigmoid, max_sigmoid).log().neg() #[bs,1,ds] x [bs,ds,1] = [bs,1,1] => [bs]
+#        logging.info('err.size={} BS={}'.format(err.size(),BS))
         assert BS == err.size()[0]
         if torch.isnan(err).any() or torch.isinf(err).any():
             logging.error('NaN/Inf detected in positive words err={}'.format(err))
