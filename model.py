@@ -125,7 +125,6 @@ class Word2Vec(nn.Module):
  
         if torch.isnan(emb).any() or torch.isinf(emb).any():
             logging.error('NaN/Inf detected in {} layer emb.shape={}\nwrds {}'.format(layer,emb.shape,wrd))
-            self.NaN(wrd,emb)
             sys.exit()
         return emb
 
