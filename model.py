@@ -153,7 +153,7 @@ class Word2Vec(nn.Module):
         msk = torch.as_tensor(batch_msk) #batch of contex masks (list:bs of list:nc)
         assert BS == msk.size()[0] 
         assert NC == msk.size()[1] 
-        logging.info('BS={}, NN={}, NC={}'.format(BS,NN,NC))
+#        logging.info('BS={}, NN={}, NC={}'.format(BS,NN,NC))
 
         if msk.type() != 'torch.BoolTensor':
             logging.error('bad msk type {}'.format(msk.type()))
@@ -167,7 +167,7 @@ class Word2Vec(nn.Module):
         ctx_emb = self.NgramsEmbed(ctx, msk) #[bs,ds]
         DS = ctx_emb.size()[1]
         assert BS == ctx_emb.size()[0]
-        logging.info('DS={}'.format(DS))
+#        logging.info('DS={}'.format(DS))
         if torch.isnan(ctx_emb).any() or torch.isinf(ctx_emb).any():
             logging.error('NaN/Inf detected in ctx_emb')
             sys.exit()
