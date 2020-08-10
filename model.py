@@ -144,9 +144,16 @@ class Word2Vec(nn.Module):
 
     def forward(self, batch_idx, batch_neg, batch_ctx, batch_msk):
         idx = torch.as_tensor(batch_idx) #batch of center (list:bs)
-        neg = torch.as_tensor(batch_neg) #batch of context (list:bs of list:nc)
-        ctx = torch.as_tensor(batch_ctx) #batch of negative (list:bs of list:nn)
+        BS = idx.size()[0]
+        neg = torch.as_tensor(batch_neg) #batch of context (list:bs of list:nn)
+        NN = neg.size()[1]
+        assert BS == neg.size()[0] 
+        ctx = torch.as_tensor(batch_ctx) #batch of negative (list:bs of list:nc)
+        NC = ctx.size()[1]
+        assert BS == ctx.size()[0] 
         msk = torch.as_tensor(batch_msk) #batch of contex masks (list:bs of list:nc)
+        assert BS == msk.size()[0] 
+        assert NC == msk.size()[1] 
 
         if msk.type() != 'torch.BoolTensor':
             logging.error('bad msk type {}'.format(msk.type()))
@@ -158,6 +165,8 @@ class Word2Vec(nn.Module):
         ### Context words are embedded using iEmb
         ###
         ctx_emb = self.NgramsEmbed(ctx, msk) #[bs,ds]
+        DS = ctx_emb.size()[1]
+        assert BS == ctx_emb.size()[0]
         if torch.isnan(ctx_emb).any() or torch.isinf(ctx_emb).any():
             logging.error('NaN/Inf detected in ctx_emb')
             sys.exit()
@@ -165,6 +174,8 @@ class Word2Vec(nn.Module):
         ### Center words are embedded using oEmb
         ###
         wrd_emb = self.WordEmbed(idx,'oEmb') #[bs,ds]
+        assert BS == wrd_emb.size()[0]
+        assert DS == wrd_emb.size()[1]
         if torch.isnan(wrd_emb).any() or torch.isinf(wrd_emb).any():
             logging.error('NaN/Inf detected in wrd_emb')
             sys.exit()
@@ -172,6 +183,9 @@ class Word2Vec(nn.Module):
         ### Negative words are embedded using oEmb
         ###
         neg_emb = self.WordEmbed(neg,'oEmb').neg() #[bs,nn,ds]
+        assert BS == neg_emb.size()[0]
+        assert NN == neg_emb.size()[1]
+        assert DS == neg_emb.size()[2]
         if torch.isnan(neg_emb).any() or torch.isinf(neg_emb).any():
             logging.error('NaN/Inf detected in neg_emb')
             sys.exit()
@@ -180,6 +194,7 @@ class Word2Vec(nn.Module):
         ###
         #i use clamp to prevent NaN/Inf appear when computing the log of 1.0/0.0
         err = torch.bmm(ctx_emb.unsqueeze(1), wrd_emb.unsqueeze(-1)).squeeze().sigmoid().clamp(min_sigmoid, max_sigmoid).log().neg() #[bs,1,ds] x [bs,ds,1] = [bs,1] = > [bs]
+        assert BS == err.size()
         if torch.isnan(err).any() or torch.isinf(err).any():
             logging.error('NaN/Inf detected in positive words err={}'.format(err))
             sys.exit()
@@ -187,7 +202,9 @@ class Word2Vec(nn.Module):
         ###
         ### Computing negative words loss
         ###
-        err = torch.bmm(ctx_emb.unsqueeze(1), neg_emb.transpose(2,1)).squeeze().sigmoid().clamp(min_sigmoid, max_sigmoid).log().neg() #[bs,1,ds] x [bs,ds,n] = [bs,1,n] = > [bs,n]
+        err = torch.bmm(ctx_emb.unsqueeze(1), neg_emb.transpose(2,1)).squeeze().sigmoid().clamp(min_sigmoid, max_sigmoid).log().neg() #[bs,1,ds] x [bs,ds,nn] = [bs,1,nn] = > [bs,nn]
+        assert BS == err.size()[0]
+        assert NN == err.size()[1]
         err = torch.sum(err, dim=1) #[bs] (sum of errors of all negative words) (not averaged)
         if torch.isnan(err).any() or torch.isinf(err).any():
             logging.error('NaN/Inf detected in negative words err={}'.format(err))
