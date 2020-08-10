@@ -205,7 +205,7 @@ class Word2Vec(nn.Module):
         bmm = torch.bmm(ctx_emb_2, wrd_emb_2) #[bs,1,1]
         logging.info('bmm.size={}'.format(bmm.size()))
         assert BS == bmm.size()[0]
-        bmm_2 = bmm.squeeze() #[bs]
+        bmm_2 = bmm.squeeze(2).squeeze(1) #[bs] (do not squeeze axis=0 when bs=1)
         logging.info('bmm_2.size={}'.format(bmm_2.size()))
         assert BS == bmm_2.size()[0]
         err = bmm_2.sigmoid().clamp(min_sigmoid, max_sigmoid).log().neg() #[bs]
