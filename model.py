@@ -168,6 +168,7 @@ class Word2Vec(nn.Module):
         ctx_emb = self.NgramsEmbed(ctx, msk) #[bs,ds]
         DS = ctx_emb.size()[1]
         assert BS == ctx_emb.size()[0]
+        logging.info('DS={}'.format(DS))
         if torch.isnan(ctx_emb).any() or torch.isinf(ctx_emb).any():
             logging.error('NaN/Inf detected in ctx_emb')
             sys.exit()
@@ -195,7 +196,7 @@ class Word2Vec(nn.Module):
         ###
         #i use clamp to prevent NaN/Inf appear when computing the log of 1.0/0.0
         err = torch.bmm(ctx_emb.unsqueeze(1), wrd_emb.unsqueeze(-1)).squeeze().sigmoid().clamp(min_sigmoid, max_sigmoid).log().neg() #[bs,1,ds] x [bs,ds,1] = [bs,1] = > [bs]
-        logging.info('err.size={}'.format(err.size()))
+        logging.info('err.size={} BS={}'.format(err.size(),BS))
         assert BS == err.size()
         if torch.isnan(err).any() or torch.isinf(err).any():
             logging.error('NaN/Inf detected in positive words err={}'.format(err))
