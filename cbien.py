@@ -220,7 +220,7 @@ class Args():
         self.beta2 = 0.999
         self.keep_last_n = 5
         self.save_every_n_steps = 5000
-        self.valid_every_n_steps = 10000
+        self.valid_every_n_steps = 5000
         self.report_every_n_steps = 500
         self.k = 5
         self.sim = 'cos'
@@ -270,7 +270,7 @@ To allow validation use: [name].valid_?????.gz
 
    -keep_last       INT : keep last n checkpoints                   (5)
    -save_every      INT : save checkpoint every n learning steps    (5000)
-   -valid_every     INT : run validation every n learning steps     (5000)
+   -valid_every     INT : run validation every n learning steps     (10000)
    -report_every    INT : print report every n learning steps       (500)
 
  -------- When inference (mode sentence-vectors or word-vectors) -------------
