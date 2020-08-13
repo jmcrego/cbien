@@ -195,7 +195,7 @@ def do_sentence_vectors(args):
 
         #tend = datetime.utcnow() #datetime.now()
         #tend = dt.now()
-        tstart = timer()
+        tend = timer()
 
         sec_elapsed = (tend - tstart)
         logging.info('processed {} sentences, {} tokens, in {} sec'.format(nsent,ntoks,sec_elapsed))
