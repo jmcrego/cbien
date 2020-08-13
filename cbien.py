@@ -143,7 +143,7 @@ def do_sentence_vectors(args):
         nsent = 0
         ntoks = 0
 #        tstart = datetime.utcnow() #datetime.now()
-        tstart = dt.datetime.now()
+        tstart = dt.now()
         file_pair = Inputter(args.data_src,args.data_tgt,token,vocab.max_ngram, vocab.str_sep, vocab.str_bos, vocab.str_eos, vocab.tag_src, vocab.tag_tgt, do_filter=False)
         for toks in file_pair:
             nsent += 1
@@ -192,7 +192,7 @@ def do_sentence_vectors(args):
                 print('{}'.format(' '.join(sentence) ))
 
         #tend = datetime.utcnow() #datetime.now()
-        tend = dt.datetime.now()
+        tend = dt.now()
         sec_elapsed = (tend - tstart).microseconds /1e6
         logging.info('processed {} sentences, {} tokens, in {} sec'.format(nsent,ntoks,sec_elapsed))
 
