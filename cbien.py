@@ -19,6 +19,7 @@ from tokenizer import OpenNMTTokenizer
 from model import Word2Vec, load_model, load_build_optim, save_model, save_optim
 from utils import create_logger
 from inputter import Inputter
+from datetime import datetime
 
 def do_preprocess(args):
     ###
@@ -140,9 +141,12 @@ def do_sentence_vectors(args):
         batch_snt = []
         batch_msk = []
         nsent = 0
+        ntoks = 0
+        tstart = datetime.now()
         file_pair = Inputter(args.data_src,args.data_tgt,token,vocab.max_ngram, vocab.str_sep, vocab.str_bos, vocab.str_eos, vocab.tag_src, vocab.tag_tgt, do_filter=False)
         for toks in file_pair:
             nsent += 1
+            ntoks += len(toks) #contains <bos> <eos> <sep>
             snt = dataset.get_ctx(toks, -1)
             #print(snt)
             msk = [True] * len(snt)
@@ -186,6 +190,7 @@ def do_sentence_vectors(args):
                 sentence = ["{:.6f}".format(w) for w in snts[i]]
                 print('{}'.format(' '.join(sentence) ))
 
+        logging.info('processed {} sentences, {} tokens, in {}'.format(nsent,ntoks,datetime.now()-tstart))
 
 ################################################################
 ### args #######################################################

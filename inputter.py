@@ -109,7 +109,7 @@ class Inputter():
             yield toks
 
         tend = datetime.now()
-        logging.info('filtered {} out of {} sentences (found {} tokens) in {} seconds on {},{}'.format(self.stats_nskip,self.stats_nsent,self.stats_ntokens,tend-tstart,self.fsrc,self.ftgt))
+        logging.info('filtered {} out of {} sentences (found {} tokens) in {} on {},{}'.format(self.stats_nskip,self.stats_nsent,self.stats_ntokens,tend-tstart,self.fsrc,self.ftgt))
         if self.fsrc is not None:
             fs.close()
         if self.ftgt is not None:
