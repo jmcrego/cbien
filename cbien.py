@@ -142,7 +142,8 @@ def do_sentence_vectors(args):
         batch_msk = []
         nsent = 0
         ntoks = 0
-        tstart = datetime.utcnow() #datetime.now()
+#        tstart = datetime.utcnow() #datetime.now()
+        tstart = datetime.now().microsecond
         file_pair = Inputter(args.data_src,args.data_tgt,token,vocab.max_ngram, vocab.str_sep, vocab.str_bos, vocab.str_eos, vocab.tag_src, vocab.tag_tgt, do_filter=False)
         for toks in file_pair:
             nsent += 1
@@ -190,7 +191,8 @@ def do_sentence_vectors(args):
                 sentence = ["{:.6f}".format(w) for w in snts[i]]
                 print('{}'.format(' '.join(sentence) ))
 
-        tend = datetime.utcnow() #datetime.now()
+        #tend = datetime.utcnow() #datetime.now()
+        tend = datetime.now().microsecond
         telapsed = tend-tstart
         logging.info('processed {} sentences, {} tokens, in {} ms'.format(nsent,ntoks,telapsed))
 
