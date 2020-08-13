@@ -3,6 +3,7 @@ import logging
 import sys
 import os
 import io
+from datetime import datetime
 from collections import defaultdict
 from utils import open_read
 
@@ -48,6 +49,8 @@ class Inputter():
             fs, is_gzip_src = open_read(self.fsrc)
         if self.ftgt is not None:
             ft, is_gzip_tgt = open_read(self.ftgt)
+
+        tstart = datetime.now()
 
         while True:
 
@@ -105,13 +108,12 @@ class Inputter():
 
             yield toks
 
-        logging.info('filtered {} out of {} sentences (found {} tokens) in {},{}'.format(self.stats_nskip,self.stats_nsent,self.stats_ntokens,self.fsrc,self.ftgt))
+        tend = datetime.now()
+        logging.info('filtered {} out of {} sentences (found {} tokens) in {} seconds on {},{}'.format(self.stats_nskip,self.stats_nsent,self.stats_ntokens,tend-tstart,self.fsrc,self.ftgt))
         if self.fsrc is not None:
             fs.close()
         if self.ftgt is not None:
             ft.close()
-
-
 
 
 
