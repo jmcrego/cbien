@@ -193,8 +193,8 @@ def do_sentence_vectors(args):
 
         #tend = datetime.utcnow() #datetime.now()
         tend = datetime.now()
-        ms_elapsed = (tend - tstart).microseconds /1e3
-        logging.info('processed {} sentences, {} tokens, in {} ms'.format(nsent,ntoks,ms_elapsed))
+        ms_elapsed = (tend - tstart).microseconds /1e6
+        logging.info('processed {} sentences, {} tokens, in {} sec'.format(nsent,ntoks,ms_elapsed))
 
 ################################################################
 ### args #######################################################
