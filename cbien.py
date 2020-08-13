@@ -19,7 +19,7 @@ from tokenizer import OpenNMTTokenizer
 from model import Word2Vec, load_model, load_build_optim, save_model, save_optim
 from utils import create_logger
 from inputter import Inputter
-from datetime import datetime as dt
+#from datetime import datetime as dt
 from timeit import default_timer as timer
 
 def do_preprocess(args):
