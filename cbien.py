@@ -198,7 +198,8 @@ def do_sentence_vectors(args):
         tend = timer()
 
         sec_elapsed = (tend - tstart)
-        logging.info('processed {} sentences, {} tokens, in {} sec'.format(nsent,ntoks,sec_elapsed))
+        toks_per_sec = ntoks / sec_elapsed
+        logging.info('processed {} sentences, {} tokens, in {} sec [{} toks/sec]'.format(nsent,ntoks,sec_elapsed,toks_per_sec))
 
 ################################################################
 ### args #######################################################
