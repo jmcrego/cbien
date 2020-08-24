@@ -62,6 +62,7 @@ def do_train(args):
     dataset = Dataset(args,vocab,token)
 
     model, n_steps = load_model(args.name, vocab)
+
     if model is None:
         logging.info('start model from scratch')
         model = Word2Vec(len(vocab), args.embedding_size, args.pooling, vocab.idx_pad)
@@ -72,6 +73,10 @@ def do_train(args):
     n_epochs = 0
     losses = []
     while True:
+        if args.max_steps > 0 and n_steps >= args.max_steps:
+            logging.info('Stop ({} steps reached)'.format(n_steps))
+            break
+
         n_epochs += 1
         for batch_idx, batch_neg, batch_ctx, batch_msk in dataset:
             model.train()
@@ -94,9 +99,11 @@ def do_train(args):
             if n_steps % args.valid_every_n_steps == 0:
                 do_validation(args,token,vocab,model,n_steps)
 
-        if n_epochs >= args.max_epochs:
+        if args.max_epochs > 0 and n_epochs >= args.max_epochs:
             logging.info('Stop ({} epochs reached)'.format(n_epochs))
             break
+
+
     save_model(args.name, model, n_steps, args.keep_last_n)
     save_optim(args.name, optimizer)
 
@@ -225,6 +232,7 @@ class Args():
         self.pooling = 'avg'
         self.batch_size = 2048
         self.max_epochs = 1
+        self.max_steps = 100000
         self.embedding_size = 300
         self.window = 0
         self.n_negs = 10
@@ -275,7 +283,8 @@ To allow validation use: [name].valid_?????.gz
    -n_negs          INT : number of negative samples                (10)
    -pooling      STRING : max, avg, sum                             (avg)
    -embedding_size  INT : embedding dimension                       (300)
-   -max_epochs      INT : stop learning after this number of epochs (1)
+   -max_epochs      INT : stop learning after this many epochs      (1)
+   -max_steps       INT : stop learning after this many steps       (100000)
 
    -learning_rate FLOAT : learning rate for Adam optimizer          (0.001)
    -eps           FLOAT : eps for Adam optimizer                    (1e-08)
@@ -325,6 +334,7 @@ To allow validation use: [name].valid_?????.gz
             elif (tok=="-pooling" and len(argv)): self.pooling = argv.pop(0)
             elif (tok=="-embedding_size" and len(argv)): self.embedding_size = int(argv.pop(0))
             elif (tok=="-max_epochs" and len(argv)): self.max_epochs = int(argv.pop(0))
+            elif (tok=="-max_steps" and len(argv)): self.max_steps = int(argv.pop(0))
             elif (tok=="-learning_rate" and len(argv)): self.learning_rate = float(argv.pop(0))
             elif (tok=="-eps" and len(argv)): self.eps = float(argv.pop(0))
             elif (tok=="-beta1" and len(argv)): self.beta1 = float(argv.pop(0))
