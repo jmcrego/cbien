@@ -134,8 +134,7 @@ def do_validation(args,token,vocab,model,n_steps,min_loss,n_valid_nogain):
             n_valid_nogain = 0
             min_loss = my_loss
             ### save new best model
-            save_model(args.name, model, 99999, args.keep_last_n)
-            save_optim(args.name, optimizer)
+            save_model_best(args.name, model, n_steps, min_loss)
         else:
             n_valid_nogain += 1
     else:
@@ -160,6 +159,9 @@ def do_sentence_vectors(args):
     vocab.read(args.name + '.vocab')
     dataset = Dataset(args, vocab, token)
     model, _ = load_model_best(args.name, vocab)
+    if model is None:
+        model, _ = load_model(args.name, vocab)
+
     if args.cuda:
         model.cuda()
 

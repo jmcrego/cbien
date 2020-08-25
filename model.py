@@ -62,7 +62,7 @@ def load_model(pattern, vocab):
         logging.info('loaded checkpoint {} [voc:{},emb:{}] pooling={}'.format(file,len(vocab),embedding_size,pooling))
     return model, n_steps
 
-def save_model_best(pattern, model, n_steps, min_valid_loss):
+def save_model_best(pattern, model, n_steps, min_loss):
     file = pattern + '.model.pth'
     state = {
         'pooling': model.pooling,
@@ -70,7 +70,7 @@ def save_model_best(pattern, model, n_steps, min_valid_loss):
         'vocab_size': model.vs,
         'idx_pad': model.idx_pad,
         'n_steps': n_steps,
-        'loss': min_valid_loss,
+        'min_loss': min_loss,
         'model': model.state_dict()
     }
     torch.save(state, file)
@@ -95,10 +95,10 @@ def load_model_best(pattern, vocab):
             logging.error('incompatible idx_pad {} != {}'.format(idx_pad, vocab.idx_pad))
             sys.exit()
         n_steps = checkpoint['n_steps']
-        min_valid_loss = checkpoint['loss']
+        min_loss = checkpoint['min_loss']
         model = Word2Vec(vocab_size, embedding_size, pooling, idx_pad)
         model.load_state_dict(checkpoint['model'])
-        logging.info('loaded best checkpoint {} [voc:{},emb:{}] pooling={} step={} min_valid_loss={:.6f}'.format(file,len(vocab),embedding_size,pooling,n_steps,min_valid_loss))
+        logging.info('loaded best checkpoint {} [voc:{},emb:{}] pooling={} n_steps={} min_loss={:.6f}'.format(file,len(vocab),embedding_size,pooling,n_steps,min_loss))
     return model, n_steps
 
 def save_optim(pattern, optimizer):
