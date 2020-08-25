@@ -130,9 +130,9 @@ def do_validation(args,token,vocab,model,n_steps,min_loss,n_valid_nogain):
     if len(valid_losses):
         myloss = np.mean(valid_losses)
         logging.info('VALIDATION n_steps={} Loss={:.6f} best loss={:.6f}'.format(n_steps,myloss,min_loss))
-        if min_loss == 0.0 or my_loss < min_loss:
+        if min_loss == 0.0 or myloss < min_loss:
             n_valid_nogain = 0
-            min_loss = my_loss
+            min_loss = myloss
             ### save new best model
             save_model_best(args.name, model, n_steps, min_loss)
         else:
