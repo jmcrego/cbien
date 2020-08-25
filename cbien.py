@@ -74,7 +74,9 @@ def do_train(args):
     losses = []
     min_val_loss = 0.0
     n_valid_nogain = 0
-    while True:
+
+    stop = False
+    while not stop:
 
         n_epochs += 1
         for batch_idx, batch_neg, batch_ctx, batch_msk in dataset:
@@ -101,15 +103,20 @@ def do_train(args):
                 min_val_loss, n_valid_nogain = do_validation(args,token,vocab,model,n_steps,min_val_loss,n_valid_nogain)
 
                 if args.early_stop > 0 and n_valid_nogain >= args.early_stop:
+                    stop = True
                     logging.info('Stop ({} valids without improving performance reached)'.format(n_valid_nogain))
                     break
 
+            if stop:
+                break
+
             if args.max_steps > 0 and n_steps >= args.max_steps:
+                stop = True
                 logging.info('Stop ({} steps reached)'.format(n_steps))
                 break
 
-
         if args.max_epochs > 0 and n_epochs >= args.max_epochs:
+            stop = True
             logging.info('Stop ({} epochs reached)'.format(n_epochs))
             break
 
