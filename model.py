@@ -12,6 +12,7 @@ import pyonmttok
 import glob
 import numpy as np
 import torch.nn as nn
+from os import path
 from collections import Counter
 from dataset import Dataset
 from vocab import Vocab
@@ -59,6 +60,45 @@ def load_model(pattern, vocab):
         model = Word2Vec(vocab_size, embedding_size, pooling, idx_pad)
         model.load_state_dict(checkpoint['model'])
         logging.info('loaded checkpoint {} [voc:{},emb:{}] pooling={}'.format(file,len(vocab),embedding_size,pooling))
+    return model, n_steps
+
+def save_model_best(pattern, model, n_steps, min_valid_loss):
+    file = pattern + '.model.pth'
+    state = {
+        'pooling': model.pooling,
+        'embedding_size': model.ds,
+        'vocab_size': model.vs,
+        'idx_pad': model.idx_pad,
+        'n_steps': n_steps,
+        'loss': min_valid_loss,
+        'model': model.state_dict()
+    }
+    torch.save(state, file)
+    logging.info('saved model checkpoint {}'.format(file))
+
+
+def load_model_best(pattern, vocab):
+    model = None
+    n_steps = 0
+    file = pattern + '.model.pth' 
+
+    if path.isfile(file):
+        checkpoint = torch.load(file)
+        pooling = checkpoint['pooling']
+        embedding_size = checkpoint['embedding_size']
+        vocab_size = checkpoint['vocab_size']
+        if vocab_size != len(vocab):
+            logging.error('incompatible vocabulary size {} != {}'.format(vocab_size, len(vocab)))
+            sys.exit()
+        idx_pad = checkpoint['idx_pad']
+        if idx_pad != vocab.idx_pad:
+            logging.error('incompatible idx_pad {} != {}'.format(idx_pad, vocab.idx_pad))
+            sys.exit()
+        n_steps = checkpoint['n_steps']
+        min_valid_loss = checkpoint['loss']
+        model = Word2Vec(vocab_size, embedding_size, pooling, idx_pad)
+        model.load_state_dict(checkpoint['model'])
+        logging.info('loaded best checkpoint {} [voc:{},emb:{}] pooling={} step={} min_valid_loss={:.6f}'.format(file,len(vocab),embedding_size,pooling,n_steps,min_valid_loss))
     return model, n_steps
 
 def save_optim(pattern, optimizer):

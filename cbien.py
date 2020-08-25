@@ -16,7 +16,7 @@ import torch.nn as nn
 from dataset import Dataset
 from vocab import Vocab
 from tokenizer import OpenNMTTokenizer
-from model import Word2Vec, load_model, load_build_optim, save_model, save_optim
+from model import Word2Vec, load_model, load_model_best, load_build_optim, save_model, save_model_best, save_optim
 from utils import create_logger
 from inputter import Inputter
 #from datetime import datetime as dt
@@ -79,14 +79,6 @@ def do_train(args):
         n_epochs += 1
         for batch_idx, batch_neg, batch_ctx, batch_msk in dataset:
 
-            if args.max_steps > 0 and n_steps >= args.max_steps:
-                logging.info('Stop ({} steps reached)'.format(n_steps))
-                break
-
-            if args.max_valid_nogain > 0 and n_valid_nogain >= args.max_valid_nogain:
-                logging.info('Stop ({} valid nogain reached)'.format(n_valid_nogain))
-                break
-
             model.train()
             loss = model.forward(batch_idx, batch_neg, batch_ctx, batch_msk)
             optimizer.zero_grad()
@@ -105,7 +97,17 @@ def do_train(args):
                 save_optim(args.name, optimizer)
 
             if n_steps % args.valid_every_n_steps == 0:
+
                 min_val_loss, n_valid_nogain = do_validation(args,token,vocab,model,n_steps,min_val_loss,n_valid_nogain)
+
+                if args.max_valid_nogain > 0 and n_valid_nogain >= args.max_valid_nogain:
+                    logging.info('Stop ({} valid nogain reached)'.format(n_valid_nogain))
+                    break
+
+            if args.max_steps > 0 and n_steps >= args.max_steps:
+                logging.info('Stop ({} steps reached)'.format(n_steps))
+                break
+
 
         if args.max_epochs > 0 and n_epochs >= args.max_epochs:
             logging.info('Stop ({} epochs reached)'.format(n_epochs))
@@ -127,11 +129,13 @@ def do_validation(args,token,vocab,model,n_steps,min_loss,n_valid_nogain):
             valid_losses.append(loss.data.cpu().detach().numpy())
     if len(valid_losses):
         myloss = np.mean(valid_losses)
-        logging.info('VALIDATION n_steps={} Loss={:.6f}'.format(n_steps,myloss))
+        logging.info('VALIDATION n_steps={} Loss={:.6f} best loss={:.6f}'.format(n_steps,myloss,min_loss))
         if min_loss == 0.0 or my_loss < min_loss:
             n_valid_nogain = 0
             min_loss = my_loss
             ### save new best model
+            save_model(args.name, model, 99999, args.keep_last_n)
+            save_optim(args.name, optimizer)
         else:
             n_valid_nogain += 1
     else:
@@ -155,7 +159,7 @@ def do_sentence_vectors(args):
     vocab = Vocab()
     vocab.read(args.name + '.vocab')
     dataset = Dataset(args, vocab, token)
-    model, _ = load_model(args.name, vocab)
+    model, _ = load_model_best(args.name, vocab)
     if args.cuda:
         model.cuda()
 
