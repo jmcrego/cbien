@@ -73,6 +73,7 @@ def do_train(args):
     n_epochs = 0
     losses = []
     min_val_loss = 0.0
+    n_valids_without_lowering_loss = 0
     while True:
         if args.max_steps > 0 and n_steps >= args.max_steps:
             logging.info('Stop ({} steps reached)'.format(n_steps))
@@ -98,7 +99,7 @@ def do_train(args):
                 save_optim(args.name, optimizer)
 
             if n_steps % args.valid_every_n_steps == 0:
-                min_val_loss = do_validation(args,token,vocab,model,n_steps,min_val_loss)
+                min_val_loss, n_valids_without_lowering_loss = do_validation(args,token,vocab,model,n_steps,min_val_loss,n_valids_without_lowering_loss)
 
         if args.max_epochs > 0 and n_epochs >= args.max_epochs:
             logging.info('Stop ({} epochs reached)'.format(n_epochs))
@@ -109,7 +110,7 @@ def do_train(args):
     save_optim(args.name, optimizer)
 
 
-def do_validation(args,token,vocab,model,n_steps,min_loss):
+def do_validation(args,token,vocab,model,n_steps,min_loss,n_valids_without_lowering_loss):
     logging.info('run VALIDATION')
     valid_dataset = Dataset(args, vocab, token, isValid=True)
     valid_losses = []
@@ -122,11 +123,14 @@ def do_validation(args,token,vocab,model,n_steps,min_loss):
         myloss = np.mean(valid_losses)
         logging.info('VALIDATION n_steps={} Loss={:.6f}'.format(n_steps,myloss))
         if min_loss == 0.0 or my_loss < min_loss:
+            n_valids_without_lowering_loss = 0
             min_loss = my_loss
             ### save new best model
+        else:
+            n_valids_without_lowering_loss += 1
     else:
         logging.info('VALIDATION no examples found!')
-    return min_loss
+    return min_loss, n_valids_without_lowering_loss
 
 
 
@@ -236,8 +240,8 @@ class Args():
         self.pkeep = 1.0
         self.pooling = 'avg'
         self.batch_size = 2048
-        self.max_epochs = 1
-        self.max_steps = 100000
+        self.max_epochs = 0
+        self.max_steps = 0
         self.embedding_size = 300
         self.window = 0
         self.n_negs = 10
@@ -288,8 +292,8 @@ To allow validation use: [name].valid_?????.gz
    -n_negs          INT : number of negative samples                (10)
    -pooling      STRING : max, avg, sum                             (avg)
    -embedding_size  INT : embedding dimension                       (300)
-   -max_epochs      INT : stop learning after this many epochs      (1)
-   -max_steps       INT : stop learning after this many steps       (100000)
+   -max_epochs      INT : stop learning after this many epochs      (0:infinity)
+   -max_steps       INT : stop learning after this many steps       (0:infinity)
 
    -learning_rate FLOAT : learning rate for Adam optimizer          (0.001)
    -eps           FLOAT : eps for Adam optimizer                    (1e-08)
