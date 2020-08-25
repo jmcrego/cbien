@@ -100,8 +100,8 @@ def do_train(args):
 
                 min_val_loss, n_valid_nogain = do_validation(args,token,vocab,model,n_steps,min_val_loss,n_valid_nogain)
 
-                if args.max_valid_nogain > 0 and n_valid_nogain >= args.max_valid_nogain:
-                    logging.info('Stop ({} valid nogain reached)'.format(n_valid_nogain))
+                if args.early_stop > 0 and n_valid_nogain >= args.early_stop:
+                    logging.info('Stop ({} valids without improving performance reached)'.format(n_valid_nogain))
                     break
 
             if args.max_steps > 0 and n_steps >= args.max_steps:
@@ -129,7 +129,6 @@ def do_validation(args,token,vocab,model,n_steps,min_loss,n_valid_nogain):
             valid_losses.append(loss.data.cpu().detach().numpy())
     if len(valid_losses):
         myloss = np.mean(valid_losses)
-        logging.info('VALIDATION n_steps={} Loss={:.6f} best loss={:.6f}'.format(n_steps,myloss,min_loss))
         if min_loss == 0.0 or myloss < min_loss:
             n_valid_nogain = 0
             min_loss = myloss
@@ -137,6 +136,7 @@ def do_validation(args,token,vocab,model,n_steps,min_loss,n_valid_nogain):
             save_model_best(args.name, model, n_steps, min_loss)
         else:
             n_valid_nogain += 1
+        logging.info('VALIDATION n_steps={} Loss={:.6f} best Loss={:.6f} n_valid_nogain={}'.format(n_steps,myloss,min_loss,n_valid_nogain))
     else:
         logging.info('VALIDATION no examples found!')
     return min_loss, n_valid_nogain
@@ -254,7 +254,7 @@ class Args():
         self.batch_size = 2048
         self.max_epochs = 0
         self.max_steps = 0
-        self.max_valid_nogain = 0
+        self.early_stop = 0
         self.embedding_size = 300
         self.window = 0
         self.n_negs = 10
@@ -307,7 +307,7 @@ To allow validation use: [name].valid_?????.gz
    -embedding_size  INT : embedding dimension                       (300)
    -max_epochs      INT : stop learning after this many epochs      (0:infinity)
    -max_steps       INT : stop learning after this many steps       (0:infinity)
-   -max_valid_nogain INT : stop learning after this many validations without gain (0:infinity)
+   -early_stop      INT : stop learning after this many valids      (0:infinity)
 
    -learning_rate FLOAT : learning rate for Adam optimizer          (0.001)
    -eps           FLOAT : eps for Adam optimizer                    (1e-08)
@@ -358,7 +358,7 @@ To allow validation use: [name].valid_?????.gz
             elif (tok=="-embedding_size" and len(argv)): self.embedding_size = int(argv.pop(0))
             elif (tok=="-max_epochs" and len(argv)): self.max_epochs = int(argv.pop(0))
             elif (tok=="-max_steps" and len(argv)): self.max_steps = int(argv.pop(0))
-            elif (tok=="-max_valid_nogain" and len(argv)): self.max_valid_nogain = int(argv.pop(0))
+            elif (tok=="-early_stop" and len(argv)): self.early_stop = int(argv.pop(0))
             elif (tok=="-learning_rate" and len(argv)): self.learning_rate = float(argv.pop(0))
             elif (tok=="-eps" and len(argv)): self.eps = float(argv.pop(0))
             elif (tok=="-beta1" and len(argv)): self.beta1 = float(argv.pop(0))
