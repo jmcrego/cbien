@@ -72,6 +72,7 @@ def do_train(args):
     optimizer = load_build_optim(args.name, model, args.learning_rate, args.beta1, args.beta2, args.eps)
     n_epochs = 0
     losses = []
+    min_val_loss = 0.0
     while True:
         if args.max_steps > 0 and n_steps >= args.max_steps:
             logging.info('Stop ({} steps reached)'.format(n_steps))
@@ -97,7 +98,7 @@ def do_train(args):
                 save_optim(args.name, optimizer)
 
             if n_steps % args.valid_every_n_steps == 0:
-                do_validation(args,token,vocab,model,n_steps)
+                min_val_loss = do_validation(args,token,vocab,model,n_steps,min_val_loss)
 
         if args.max_epochs > 0 and n_epochs >= args.max_epochs:
             logging.info('Stop ({} epochs reached)'.format(n_epochs))
@@ -108,7 +109,7 @@ def do_train(args):
     save_optim(args.name, optimizer)
 
 
-def do_validation(args,token,vocab,model,n_steps):
+def do_validation(args,token,vocab,model,n_steps,min_loss):
     logging.info('run VALIDATION')
     valid_dataset = Dataset(args, vocab, token, isValid=True)
     valid_losses = []
@@ -118,10 +119,14 @@ def do_validation(args,token,vocab,model,n_steps):
             loss = model.forward(batch_idx, batch_neg, batch_ctx, batch_msk)
             valid_losses.append(loss.data.cpu().detach().numpy())
     if len(valid_losses):
-        logging.info('VALIDATION n_steps={} Loss={:.6f}'.format(n_steps,np.mean(valid_losses)))
+        myloss = np.mean(valid_losses)
+        logging.info('VALIDATION n_steps={} Loss={:.6f}'.format(n_steps,myloss))
+        if min_loss == 0.0 or my_loss < min_loss:
+            min_loss = my_loss
+            ### save new best model
     else:
         logging.info('VALIDATION no examples found!')
-
+    return min_loss
 
 
 
