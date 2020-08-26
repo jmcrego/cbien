@@ -107,9 +107,6 @@ def do_train(args):
                     logging.info('Stop ({} valids without improving performance reached)'.format(n_valid_nogain))
                     break
 
-            if stop:
-                break
-
             if args.max_steps > 0 and n_steps >= args.max_steps:
                 stop = True
                 logging.info('Stop ({} steps reached)'.format(n_steps))
