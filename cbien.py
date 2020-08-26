@@ -74,7 +74,6 @@ def do_train(args):
     losses = []
     min_val_loss = 0.0
     n_valid_nogain = 0
-
     stop = False
     while not stop:
 
@@ -104,18 +103,17 @@ def do_train(args):
 
                 if args.early_stop > 0 and n_valid_nogain >= args.early_stop:
                     stop = True
-                    logging.info('Stop ({} valids without improving performance reached)'.format(n_valid_nogain))
-                    break
+                    logging.info('stop ({} valids without improving performance reached)'.format(n_valid_nogain))
+                    break #go to end of dataset
 
             if args.max_steps > 0 and n_steps >= args.max_steps:
                 stop = True
-                logging.info('Stop ({} steps reached)'.format(n_steps))
-                break
+                logging.info('stop ({} steps reached)'.format(n_steps))
+                break #go to end of dataset
 
         if args.max_epochs > 0 and n_epochs >= args.max_epochs:
             stop = True
-            logging.info('Stop ({} epochs reached)'.format(n_epochs))
-            break
+            logging.info('stop ({} epochs reached)'.format(n_epochs))
 
 
     save_model(args.name, model, n_steps, args.keep_last_n)
@@ -175,8 +173,6 @@ def do_sentence_vectors(args):
         batch_msk = []
         nsent = 0
         ntoks = 0
-#        tstart = datetime.utcnow() #datetime.now()
-#        tstart = dt.now()
         tstart = timer()
         file_pair = Inputter(args.data_src,args.data_tgt,token,vocab.max_ngram, vocab.str_sep, vocab.str_bos, vocab.str_eos, vocab.tag_src, vocab.tag_tgt, do_filter=False)
         for toks in file_pair:
@@ -225,10 +221,7 @@ def do_sentence_vectors(args):
                 sentence = ["{:.6f}".format(w) for w in snts[i]]
                 print('{}'.format(' '.join(sentence) ))
 
-        #tend = datetime.utcnow() #datetime.now()
-        #tend = dt.now()
         tend = timer()
-
         sec_elapsed = (tend - tstart)
         toks_per_sec = ntoks / sec_elapsed
         logging.info('processed {} sentences, {} tokens, in {} sec [{:.2f} toks/sec]'.format(nsent,ntoks,sec_elapsed,toks_per_sec))
@@ -275,7 +268,7 @@ class Args():
         self.prog = argv.pop(0)
         self.usage = '''usage: {} -name STRING -mode STRING -data_src FILES -data_tgt FILES [Options]
    -name         STRING : experiment name
-   -mode         STRING : preprocess, examples, train, sentence-vectors, word-vectors
+   -mode         STRING : preprocess, examples, train, sentence-vectors
 
  Options:
    -seed            INT : seed value                                (12345)
@@ -323,7 +316,7 @@ To allow validation use: [name].valid_?????.gz
    -valid_every     INT : run validation every n learning steps     (10000)
    -report_every    INT : print report every n learning steps       (500)
 
- -------- When inference (mode sentence-vectors or word-vectors) -------------
+ -------- When inference (mode sentence-vectors) -----------------------------
    -data_src      FILES : source file
    -data_tgt      FILES : target file
    -batch_size      INT : batch size used                           (2048)
