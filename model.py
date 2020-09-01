@@ -41,25 +41,30 @@ def save_model(pattern, model, n_steps, keep_last_n):
 
 def load_model(pattern, vocab):
     model = None
+
     n_steps = 0
-    files = sorted(glob.glob(pattern + '.model.?????????.pth')) 
-    if len(files):
+    file = pattern + '.model.pth' ### I try first the best model
+    if not path.isfile(file):
+        files = sorted(glob.glob(pattern + '.model.?????????.pth')) ### I check if there is one model
+        if len(files) == 0:
+            return model, n_steps
         file = files[-1] ### last is the newest
-        checkpoint = torch.load(file)
-        pooling = checkpoint['pooling']
-        embedding_size = checkpoint['embedding_size']
-        n_steps = checkpoint['n_steps']
-        vocab_size = checkpoint['vocab_size']
-        if vocab_size != len(vocab):
-            logging.error('incompatible vocabulary size {} != {}'.format(vocab_size, len(vocab)))
-            sys.exit()
-        idx_pad = checkpoint['idx_pad']
-        if idx_pad != vocab.idx_pad:
-            logging.error('incompatible idx_pad {} != {}'.format(idx_pad, vocab.idx_pad))
-            sys.exit()
-        model = Word2Vec(vocab_size, embedding_size, pooling, idx_pad)
-        model.load_state_dict(checkpoint['model'])
-        logging.info('loaded checkpoint {} [voc:{},emb:{}] pooling={}'.format(file,len(vocab),embedding_size,pooling))
+
+    checkpoint = torch.load(file)
+    pooling = checkpoint['pooling']
+    embedding_size = checkpoint['embedding_size']
+    n_steps = checkpoint['n_steps']
+    vocab_size = checkpoint['vocab_size']
+    if vocab_size != len(vocab):
+        logging.error('incompatible vocabulary size {} != {}'.format(vocab_size, len(vocab)))
+        sys.exit()
+    idx_pad = checkpoint['idx_pad']
+    if idx_pad != vocab.idx_pad:
+        logging.error('incompatible idx_pad {} != {}'.format(idx_pad, vocab.idx_pad))
+        sys.exit()
+    model = Word2Vec(vocab_size, embedding_size, pooling, idx_pad)
+    model.load_state_dict(checkpoint['model'])
+    logging.info('loaded checkpoint {} [voc:{},emb:{}] pooling={}'.format(file,len(vocab),embedding_size,pooling))
     return model, n_steps
 
 def save_model_best(pattern, model, n_steps, min_loss):
