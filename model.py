@@ -83,7 +83,7 @@ def load_model_best(pattern, vocab):
     file = pattern + '.model.pth' 
 
     if path.isfile(file):
-        checkpoint = torch.load(file)
+        checkpoint = torch.load(map_location=torch.device('cpu'),file)
         pooling = checkpoint['pooling']
         embedding_size = checkpoint['embedding_size']
         vocab_size = checkpoint['vocab_size']
