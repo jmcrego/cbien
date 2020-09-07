@@ -34,7 +34,7 @@ def save_model(pattern, model, n_steps, keep_last_n):
     torch.save(state, file)
     logging.info('saved model checkpoint {}'.format(file))
     files = sorted(glob.glob(pattern + '.model.?????????.pth')) 
-    while len(files) > keep_last_n:
+    while keep_last_n > 0 and len(files) > keep_last_n:
         f = files.pop(0)
         os.remove(f) ### first is the oldest
         logging.debug('removed checkpoint {}'.format(f))
