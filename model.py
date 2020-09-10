@@ -168,9 +168,9 @@ class Word2Vec(nn.Module):
             logging.error('bad layer {}'.format(layer))
             sys.exit()
  
-        if torch.isnan(emb).any() or torch.isinf(emb).any():
-            logging.error('NaN/Inf detected in {} layer emb.shape={}\nwrds {}'.format(layer,emb.shape,wrd))
-            sys.exit()
+#        if torch.isnan(emb).any() or torch.isinf(emb).any():
+#            logging.error('NaN/Inf detected in {} layer emb.shape={}\nwrds {}'.format(layer,emb.shape,wrd))
+#            sys.exit()
         return emb
 
     def NgramsEmbed(self, ngrams, msk):
